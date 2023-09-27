@@ -1,0 +1,496 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1、新增一个名称为test的bridge模式网络，网段为172.18.2.0&#x2F;24，创建一个容器用test网络运行，要求能用宿主机网络访问。1.1 创建一个名为test的bridge模式网络，并指定网段为172.18.2.0&#x2F;24。123456789[root@Rocky8 ~]# docker network create -d bridge --subnet 172.18.2.0&#x2F;24 --g">
+<meta property="og:type" content="article">
+<meta property="og:title" content="搭建Harbor仓库用HAProxy实现高可用">
+<meta property="og:url" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/index.html">
+<meta property="og:site_name" content="5-12 23:30">
+<meta property="og:description" content="1、新增一个名称为test的bridge模式网络，网段为172.18.2.0&#x2F;24，创建一个容器用test网络运行，要求能用宿主机网络访问。1.1 创建一个名为test的bridge模式网络，并指定网段为172.18.2.0&#x2F;24。123456789[root@Rocky8 ~]# docker network create -d bridge --subnet 172.18.2.0&#x2F;24 --g">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230906151707752.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230906151810239.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230906151901510.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230906151935460.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230906154644387.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908104207289.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908104726984.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908104919935.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908105042285.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908105437732.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908105254845.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908105323990.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908111116050.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908133432932.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908134444815.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230908134810241.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230911095613914.png">
+<meta property="og:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230911100033815.png">
+<meta property="article:published_time" content="2023-09-11T13:47:11.000Z">
+<meta property="article:modified_time" content="2023-09-11T15:04:27.086Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/image-20230906151707752.png">
+  
+  
+  <title>搭建Harbor仓库用HAProxy实现高可用 - 5-12 23:30</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.14","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                Home
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                Archives
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                Categories
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                Tags
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                About
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="搭建Harbor仓库用HAProxy实现高可用">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2023-09-11 13:47" pubdate>
+        September 11, 2023 pm
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      20k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      167 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">搭建Harbor仓库用HAProxy实现高可用</h1>
+            
+            <div class="markdown-body">
+              <h4 id="1、新增一个名称为test的bridge模式网络，网段为172-18-2-0-24，创建一个容器用test网络运行，要求能用宿主机网络访问。"><a href="#1、新增一个名称为test的bridge模式网络，网段为172-18-2-0-24，创建一个容器用test网络运行，要求能用宿主机网络访问。" class="headerlink" title="1、新增一个名称为test的bridge模式网络，网段为172.18.2.0/24，创建一个容器用test网络运行，要求能用宿主机网络访问。"></a>1、新增一个名称为test的bridge模式网络，网段为172.18.2.0/24，创建一个容器用test网络运行，要求能用宿主机网络访问。</h4><h5 id="1-1-创建一个名为test的bridge模式网络，并指定网段为172-18-2-0-24。"><a href="#1-1-创建一个名为test的bridge模式网络，并指定网段为172-18-2-0-24。" class="headerlink" title="1.1 创建一个名为test的bridge模式网络，并指定网段为172.18.2.0/24。"></a>1.1 创建一个名为test的bridge模式网络，并指定网段为172.18.2.0/24。</h5><figure class="highlight golo"><table><tr><td class="gutter"><div class="code-wrapper"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></div></td><td class="code"><pre><code class="hljs golo">[root<span class="hljs-meta">@Rocky</span>8 ~]<span class="hljs-comment"># docker network create -d bridge --subnet 172.18.2.0/24 --gateway 172.18.2.1 test</span><br><span class="hljs-number">75910</span>fb644e41a8f04795818274058d64d40302d7ef1aa03b23e836850889e8b<br><br>[root<span class="hljs-meta">@Rocky</span>8 ~]<span class="hljs-comment"># docker network ls</span><br>NETWORK ID     NAME      DRIVER    SCOPE<br>cd0076a8a42a   bridge    bridge    <span class="hljs-keyword">local</span><br>a5852151472e   host      host      <span class="hljs-keyword">local</span><br><span class="hljs-number">2</span>b5f21fbd25d   none      <span class="hljs-literal">null</span>      <span class="hljs-keyword">local</span><br><span class="hljs-number">75910</span>fb644e4   test      bridge    <span class="hljs-keyword">local</span> <span class="hljs-comment">#刚创建的brideg网络</span><br></code></pre></td></tr></table></figure>
+
+<h5 id="1-2-运行容器，并将其连接到test网络。并且使用宿主机的网络命名空间来实现宿主机网络访问。"><a href="#1-2-运行容器，并将其连接到test网络。并且使用宿主机的网络命名空间来实现宿主机网络访问。" class="headerlink" title="1.2 运行容器，并将其连接到test网络。并且使用宿主机的网络命名空间来实现宿主机网络访问。"></a>1.2 运行容器，并将其连接到test网络。并且使用宿主机的网络命名空间来实现宿主机网络访问。</h5><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs routeros">[root@Rocky8 ~]# docker <span class="hljs-built_in">run</span> -it --rm --name aloine1 --network test alpine sh<br>/ #<span class="hljs-built_in"> ip </span>a<br>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN qlen 1000<br>    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00<br>    inet 127.0.0.1/8 scope host lo<br>       valid_lft forever preferred_lft forever<br>10: eth0@if11: &lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt; mtu 1500 qdisc noqueue state UP <br>    link/ether 02:42:ac:12:02:02 brd ff:ff:ff:ff:ff:ff<br>    inet 172.18.2.2/24 brd 172.18.2.255 scope global eth0<br>       valid_lft forever preferred_lft forever<br>[root@Rocky8 ~]#<span class="hljs-built_in"> ping </span>172.18.2.2<span class="hljs-built_in"></span><br><span class="hljs-built_in">PING </span>172.18.2.2 (172.18.2.2) 56(84) bytes of data.<br>64 bytes <span class="hljs-keyword">from</span> 172.18.2.2: <span class="hljs-attribute">icmp_seq</span>=1 <span class="hljs-attribute">ttl</span>=64 <span class="hljs-attribute">time</span>=0.103 ms<br>64 bytes <span class="hljs-keyword">from</span> 172.18.2.2: <span class="hljs-attribute">icmp_seq</span>=2 <span class="hljs-attribute">ttl</span>=64 <span class="hljs-attribute">time</span>=0.042 ms<br>64 bytes <span class="hljs-keyword">from</span> 172.18.2.2: <span class="hljs-attribute">icmp_seq</span>=3 <span class="hljs-attribute">ttl</span>=64 <span class="hljs-attribute">time</span>=0.047 ms<br></code></pre></td></tr></table></figure>
+
+<h4 id="2、创建一个harbor镜像仓库，把镜像上传到harbor仓库并能从里面下载镜像创建容器。"><a href="#2、创建一个harbor镜像仓库，把镜像上传到harbor仓库并能从里面下载镜像创建容器。" class="headerlink" title="2、创建一个harbor镜像仓库，把镜像上传到harbor仓库并能从里面下载镜像创建容器。"></a>2、创建一个harbor镜像仓库，把镜像上传到harbor仓库并能从里面下载镜像创建容器。</h4><h5 id="2-1-分别准备docker-compose-、harbor安装包文件，准备2台host主机，一台安装docker-IP-10-0-0-133-一台安装（Harbor）。"><a href="#2-1-分别准备docker-compose-、harbor安装包文件，准备2台host主机，一台安装docker-IP-10-0-0-133-一台安装（Harbor）。" class="headerlink" title="2.1 分别准备docker compose 、harbor安装包文件，准备2台host主机，一台安装docker(IP:10.0.0.133),一台安装（Harbor）。"></a>2.1 分别准备docker compose 、harbor安装包文件，准备2台host主机，一台安装docker(IP:10.0.0.133),一台安装（Harbor）。</h5><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs awk">https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/goharbor/</span>harbor <span class="hljs-comment">#harbor github网址</span><br>https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/goharbor/</span>harbor/releases <span class="hljs-comment">#下载地址</span><br></code></pre></td></tr></table></figure>
+
+<h5 id="2-2-在10-0-0-136使用脚本安装docker、docker-compose-、harbor。"><a href="#2-2-在10-0-0-136使用脚本安装docker、docker-compose-、harbor。" class="headerlink" title="2.2 在10.0.0.136使用脚本安装docker、docker compose 、harbor。"></a>2.2 在10.0.0.136使用脚本安装docker、docker compose 、harbor。</h5><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br></pre></td><td class="code"><pre><code class="hljs awk">[root@Rocky8 ~]<span class="hljs-comment"># tree  #将下载好的hatbor文件和脚本文件放在一个目录下</span><br>.<br>├── harbor-offline-installer-v2.<span class="hljs-number">5.2</span>.tgz<br>├── docker-compose-linux-x86_64<br>└── install_harbor.sh<br><br>[root@Rocky8 ~]<span class="hljs-comment"># vim install_harbor.sh</span><br><span class="hljs-comment">#!/bin/bash</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment">#********************************************************************</span><br><span class="hljs-comment">#Author:            xinqi66</span><br><span class="hljs-comment">#QQ:                477681339</span><br><span class="hljs-comment">#Date:              2023-09-08</span><br><span class="hljs-comment">#FileName:          install_harbor.sh</span><br><span class="hljs-comment">#Description:       The test script</span><br><span class="hljs-comment">#Copyright (C):     2023 All rights reserved</span><br><span class="hljs-comment">#********************************************************************</span><br><br><br>DOCKER_VERSION=<span class="hljs-string">&quot;20.10.10&quot;</span><br>UBUNTU_DOCKER_VERSION=<span class="hljs-string">&quot;5:$&#123;DOCKER_VERSION&#125;~3-0~`lsb_release -si`-`lsb_release -cs`&quot;</span><br>DOCKER_COMPOSE_VERSION=<span class="hljs-number">2.6</span>.<span class="hljs-number">1</span><br><span class="hljs-comment">#DOCKER_COMPOSE_VERSION=1.29.2</span><br>DOCKER_COMPOSE_FILE=docker-compose-linux-x86_64<br>HARBOR_VERSION=<span class="hljs-number">2.5</span>.<span class="hljs-number">2</span><br>HARBOR_BASE=/apps<br><span class="hljs-comment">#HARBOR_NAME=www.xinqi66.org</span><br>HARBOR_NAME=`hostname -I|awk <span class="hljs-string">&#x27;&#123;print $1&#125;&#x27;</span>`<br>HARBOR_IP=`hostname -I|awk <span class="hljs-string">&#x27;&#123;print $1&#125;&#x27;</span>`<br>HARBOR_ADMIN_PASSWORD=<span class="hljs-number">123456</span><br><br>COLOR_SUCCESS=<span class="hljs-string">&quot;echo -e \\033[1;32m&quot;</span><br>COLOR_FAILURE=<span class="hljs-string">&quot;echo -e \\033[1;31m&quot;</span><br><span class="hljs-keyword">END</span>=<span class="hljs-string">&quot;\033[m&quot;</span><br><br>. <span class="hljs-regexp">/etc/</span>os-release<br><br>color () &#123;<br>    RES_COL=<span class="hljs-number">60</span><br>    MOVE_TO_COL=<span class="hljs-string">&quot;echo -en \\033[$&#123;RES_COL&#125;G&quot;</span><br>    SETCOLOR_SUCCESS=<span class="hljs-string">&quot;echo -en \\033[1;32m&quot;</span><br>    SETCOLOR_FAILURE=<span class="hljs-string">&quot;echo -en \\033[1;31m&quot;</span><br>    SETCOLOR_WARNING=<span class="hljs-string">&quot;echo -en \\033[1;33m&quot;</span><br>    SETCOLOR_NORMAL=<span class="hljs-string">&quot;echo -en \E[0m&quot;</span><br>    echo -n <span class="hljs-string">&quot;$1&quot;</span> &amp;&amp; <span class="hljs-variable">$MOVE_TO_COL</span><br>    echo -n <span class="hljs-string">&quot;[&quot;</span><br>    <span class="hljs-keyword">if</span> [ <span class="hljs-variable">$2</span> = <span class="hljs-string">&quot;success&quot;</span> -o <span class="hljs-variable">$2</span> = <span class="hljs-string">&quot;0&quot;</span> ] ;then<br>        <span class="hljs-variable">$&#123;SETCOLOR_SUCCESS&#125;</span><br>        echo -n $<span class="hljs-string">&quot;  OK  &quot;</span>    <br>    elif [ <span class="hljs-variable">$2</span> = <span class="hljs-string">&quot;failure&quot;</span> -o <span class="hljs-variable">$2</span> = <span class="hljs-string">&quot;1&quot;</span>  ] ;then <br>        <span class="hljs-variable">$&#123;SETCOLOR_FAILURE&#125;</span><br>        echo -n $<span class="hljs-string">&quot;FAILED&quot;</span><br>    <span class="hljs-keyword">else</span><br>        <span class="hljs-variable">$&#123;SETCOLOR_WARNING&#125;</span><br>        echo -n $<span class="hljs-string">&quot;WARNING&quot;</span><br>    fi<br>    <span class="hljs-variable">$&#123;SETCOLOR_NORMAL&#125;</span><br>    echo -n <span class="hljs-string">&quot;]&quot;</span><br>    echo <br>&#125;<br><br><br>install_docker()&#123;<br>    <span class="hljs-keyword">if</span> [ <span class="hljs-variable">$ID</span> = <span class="hljs-string">&quot;centos&quot;</span> -o <span class="hljs-variable">$ID</span> = <span class="hljs-string">&quot;rocky&quot;</span> ];then<br>        <span class="hljs-keyword">if</span> [ <span class="hljs-variable">$VERSION_ID</span> = <span class="hljs-string">&quot;7&quot;</span> ];then<br>            cat &gt;  <span class="hljs-regexp">/etc/yum</span>.repos.d/docker.repo  &lt;&lt;EOF<br>[docker]<br>name=docker<br>gpgcheck=<span class="hljs-number">0</span><br><span class="hljs-comment">#baseurl=https://mirrors.aliyun.com/docker-ce/linux/centos/7/x86_64/stable/</span><br>baseurl=https:<span class="hljs-regexp">//mi</span>rrors.tuna.tsinghua.edu.cn<span class="hljs-regexp">/docker-ce/</span>linux<span class="hljs-regexp">/centos/</span><span class="hljs-number">7</span><span class="hljs-regexp">/x86_64/</span>stable/<br>EOF<br>        <span class="hljs-keyword">else</span>     <br>            cat &gt;  <span class="hljs-regexp">/etc/yum</span>.repos.d/docker.repo  &lt;&lt;EOF<br>[docker]<br>name=docker<br>gpgcheck=<span class="hljs-number">0</span><br><span class="hljs-comment">#baseurl=https://mirrors.aliyun.com/docker-ce/linux/centos/8/x86_64/stable/</span><br>baseurl=https:<span class="hljs-regexp">//mi</span>rrors.tuna.tsinghua.edu.cn<span class="hljs-regexp">/docker-ce/</span>linux<span class="hljs-regexp">/centos/</span><span class="hljs-number">8</span><span class="hljs-regexp">/x86_64/</span>stable/<br>EOF<br>        fi<br>	    yum clean all <br>        <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span> <span class="hljs-string">&quot;Docker有以下版本&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>        yum list docker-ce --showduplicates<br>        <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span><span class="hljs-string">&quot;5秒后即将安装: docker-&quot;</span><span class="hljs-variable">$&#123;DOCKER_VERSION&#125;</span><span class="hljs-string">&quot; 版本.....&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>        <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span><span class="hljs-string">&quot;如果想安装其它Docker版本，请按ctrl+c键退出，修改版本再执行&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>        sleep <span class="hljs-number">5</span><br>        yum -y install docker-ce-<span class="hljs-variable">$DOCKER_VERSION</span> docker-ce-cli-<span class="hljs-variable">$DOCKER_VERSION</span>  \<br>            || &#123; color <span class="hljs-string">&quot;Base,Extras的yum源失败,请检查yum源配置&quot;</span> <span class="hljs-number">1</span>;<span class="hljs-keyword">exit</span>; &#125;<br>    <span class="hljs-keyword">else</span><br>	    dpkg -s docker-ce &amp;&gt; <span class="hljs-regexp">/dev/</span>null &amp;&amp; <span class="hljs-variable">$COLOR</span><span class="hljs-string">&quot;Docker已安装，退出&quot;</span> <span class="hljs-number">1</span> &amp;&amp; <span class="hljs-keyword">exit</span><br>        apt update || &#123; color <span class="hljs-string">&quot;更新包索引失败&quot;</span> <span class="hljs-number">1</span> ; <span class="hljs-keyword">exit</span> <span class="hljs-number">1</span>; &#125;  <br>        apt  -y install apt-transport-https ca-certificates curl software-properties-common || \<br>            &#123; color <span class="hljs-string">&quot;安装相关包失败&quot;</span> <span class="hljs-number">1</span> ; <span class="hljs-keyword">exit</span> <span class="hljs-number">2</span>;  &#125;  <br>        curl -fsSL https:<span class="hljs-regexp">//mi</span>rrors.tuna.tsinghua.edu.cn<span class="hljs-regexp">/docker-ce/</span>linux<span class="hljs-regexp">/ubuntu/g</span>pg | sudo apt-key add -<br>        add-apt-repository <span class="hljs-string">&quot;deb [arch=amd64] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/ubuntu $(lsb_release -cs) stable&quot;</span><br>        apt update<br>        <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span> <span class="hljs-string">&quot;Docker有以下版本&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>        apt-cache madison docker-ce<br>        <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span><span class="hljs-string">&quot;5秒后即将安装: docker-&quot;</span><span class="hljs-variable">$&#123;UBUNTU_DOCKER_VERSION&#125;</span><span class="hljs-string">&quot; 版本.....&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>        <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span><span class="hljs-string">&quot;如果想安装其它Docker版本，请按ctrl+c键退出，修改版本再执行&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>        sleep <span class="hljs-number">5</span><br>        apt -y  install docker-ce=<span class="hljs-variable">$&#123;UBUNTU_DOCKER_VERSION&#125;</span> docker-ce-cli=<span class="hljs-variable">$&#123;UBUNTU_DOCKER_VERSION&#125;</span><br>    fi<br>    <span class="hljs-keyword">if</span> [ $? -eq <span class="hljs-number">0</span> ];then<br>        color <span class="hljs-string">&quot;安装软件包成功&quot;</span>  <span class="hljs-number">0</span><br>    <span class="hljs-keyword">else</span><br>        color <span class="hljs-string">&quot;安装软件包失败，请检查网络配置&quot;</span> <span class="hljs-number">1</span><br>        <span class="hljs-keyword">exit</span><br>    fi<br>        <br>    mkdir -p <span class="hljs-regexp">/etc/</span>docker<br>    tee <span class="hljs-regexp">/etc/</span>docker/daemon.json &lt;&lt;-<span class="hljs-string">&#x27;EOF&#x27;</span><br>&#123;<br>	  <span class="hljs-string">&quot;registry-mirrors&quot;</span>: [<span class="hljs-string">&quot;https://si7y70hh.mirror.aliyuncs.com&quot;</span>]<br>&#125;<br>EOF<br>    systemctl daemon-reload<br>    systemctl enable docker<br>    systemctl restart docker<br>    docker version &amp;&amp; color <span class="hljs-string">&quot;Docker 安装成功&quot;</span> <span class="hljs-number">0</span> ||  color <span class="hljs-string">&quot;Docker 安装失败&quot;</span> <span class="hljs-number">1</span><br>	echo <span class="hljs-string">&#x27;alias rmi=&quot;docker images -qa|xargs docker rmi -f&quot;&#x27;</span> &gt;&gt; ~/.bashrc<br>	echo <span class="hljs-string">&#x27;alias rmc=&quot;docker ps -qa|xargs docker rm -f&quot;&#x27;</span> &gt;&gt; ~/.bashrc<br>&#125;<br><br><br><br>install_docker_compose()&#123;<br>    <span class="hljs-keyword">if</span> [ <span class="hljs-variable">$ID</span> = <span class="hljs-string">&quot;centos&quot;</span> -o <span class="hljs-variable">$ID</span> = <span class="hljs-string">&quot;rocky&quot;</span> ];then<br>        <span class="hljs-variable">$&#123;COLOR_SUCCESS&#125;</span><span class="hljs-string">&quot;开始安装 Docker compose.....&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>        sleep <span class="hljs-number">1</span><br>        <span class="hljs-keyword">if</span> [ ! -e  <span class="hljs-variable">$&#123;DOCKER_COMPOSE_FILE&#125;</span> ];then<br>            <span class="hljs-comment">#curl -L https://github.com/docker/compose/releases/download/$&#123;DOCKER_COMPOSE_VERSION&#125;/$&#123;DOCKER_COMPOSE_FILE&#125; -o /usr/bin/docker-compose</span><br>            curl -L https:<span class="hljs-regexp">//g</span>et.daocloud.io<span class="hljs-regexp">/docker/</span>compose<span class="hljs-regexp">/releases/</span>download<span class="hljs-regexp">/v$&#123;DOCKER_COMPOSE_VERSION&#125;/</span>docker-compose-$(uname -s)-$(uname -m) -o <span class="hljs-regexp">/usr/</span>bin/docker-compose<br>        <span class="hljs-keyword">else</span><br>            mv <span class="hljs-variable">$&#123;DOCKER_COMPOSE_FILE&#125;</span> <span class="hljs-regexp">/usr/</span>bin/docker-compose<br>        fi<br>        chmod +x <span class="hljs-regexp">/usr/</span>bin/docker-compose<br>    <span class="hljs-keyword">else</span> <br>        apt -y install docker-compose<br>    fi<br>    <span class="hljs-keyword">if</span> docker-compose --version ;then<br>        <span class="hljs-variable">$&#123;COLOR_SUCCESS&#125;</span><span class="hljs-string">&quot;Docker Compose 安装完成&quot;</span><span class="hljs-variable">$&#123;END&#125;</span> <br>    <span class="hljs-keyword">else</span><br>        <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span><span class="hljs-string">&quot;Docker compose 安装失败&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>        <span class="hljs-keyword">exit</span><br>    fi<br>&#125;<br><br>install_harbor()&#123;<br>    <span class="hljs-variable">$&#123;COLOR_SUCCESS&#125;</span><span class="hljs-string">&quot;开始安装 Harbor.....&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>    sleep <span class="hljs-number">1</span><br>    <span class="hljs-keyword">if</span>  [ ! -e  harbor-offline-installer-v<span class="hljs-variable">$&#123;HARBOR_VERSION&#125;</span>.tgz ] ;then<br>        wget https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/goharbor/</span>harbor<span class="hljs-regexp">/releases/</span>download<span class="hljs-regexp">/v$&#123;HARBOR_VERSION&#125;/</span>harbor-offline-installer-v<span class="hljs-variable">$&#123;HARBOR_VERSION&#125;</span>.tgz || <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span> <span class="hljs-string">&quot;下载失败!&quot;</span> <span class="hljs-variable">$&#123;END&#125;</span><br>    fi<br>    [ -d <span class="hljs-variable">$&#123;HARBOR_BASE&#125;</span> ] ||  mkdir <span class="hljs-variable">$&#123;HARBOR_BASE&#125;</span><br>    tar xvf harbor-offline-installer-v<span class="hljs-variable">$&#123;HARBOR_VERSION&#125;</span>.tgz  -C <span class="hljs-variable">$&#123;HARBOR_BASE&#125;</span><br>    cd <span class="hljs-variable">$&#123;HARBOR_BASE&#125;</span>/harbor<br>    cp harbor.yml.tmpl harbor.yml<br>    sed -ri <span class="hljs-string">&quot;/^hostname/s/reg.mydomain.com/$&#123;HARBOR_NAME&#125;/&quot;</span> harbor.yml<br>    sed -ri <span class="hljs-string">&quot;/^https/s/(https:)/#\1/&quot;</span> harbor.yml<br>    sed -ri <span class="hljs-string">&quot;s/(port: 443)/#\1/&quot;</span> harbor.yml<br>    sed -ri <span class="hljs-string">&quot;/certificate:/s/(.*)/#\1/&quot;</span> harbor.yml<br>    sed -ri <span class="hljs-string">&quot;/private_key:/s/(.*)/#\1/&quot;</span> harbor.yml<br>    sed -ri <span class="hljs-string">&quot;s/Harbor12345/$&#123;HARBOR_ADMIN_PASSWORD&#125;/&quot;</span> harbor.yml<br>    sed -i <span class="hljs-string">&#x27;s#^data_volume: /data#data_volume: /data/harbor#&#x27;</span> harbor.yml<br>    <span class="hljs-comment">#mkdir -p /data/harbor</span><br>    <span class="hljs-variable">$&#123;HARBOR_BASE&#125;</span><span class="hljs-regexp">/harbor/i</span>nstall.sh &amp;&amp; <span class="hljs-variable">$&#123;COLOR_SUCCESS&#125;</span><span class="hljs-string">&quot;Harbor 安装完成&quot;</span><span class="hljs-variable">$&#123;END&#125;</span> ||  <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span><span class="hljs-string">&quot;Harbor 安装失败&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>    cat &gt; <span class="hljs-regexp">/lib/</span>systemd<span class="hljs-regexp">/system/</span>harbor.service &lt;&lt;EOF<br>[Unit]<br>Description=Harbor<br>After=docker.service systemd-networkd.service systemd-resolved.service<br>Requires=docker.service<br>Documentation=http:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/vmware/</span>harbor<br><br>[Service]<br>Type=simple<br>Restart=on-failure<br>RestartSec=<span class="hljs-number">5</span><br>ExecStart=<span class="hljs-regexp">/usr/</span>bin<span class="hljs-regexp">/docker-compose -f  $&#123;HARBOR_BASE&#125;/</span>harbor/docker-compose.yml up<br>ExecStop=<span class="hljs-regexp">/usr/</span>bin<span class="hljs-regexp">/docker-compose -f $&#123;HARBOR_BASE&#125;/</span>harbor/docker-compose.yml down<br><br>[Install]<br>WantedBy=multi-user.target<br>EOF<br><br>systemctl daemon-reload <br>systemctl enable  harbor &amp;&gt;<span class="hljs-regexp">/dev/</span>null ||  <span class="hljs-variable">$&#123;COLOR&#125;</span><span class="hljs-string">&quot;Harbor已配置为开机自动启动&quot;</span><span class="hljs-variable">$&#123;END&#125;</span><br>    <span class="hljs-keyword">if</span> [ $?  -eq <span class="hljs-number">0</span> ];then  <br>        echo <br>        color <span class="hljs-string">&quot;Harbor安装完成!&quot;</span> <span class="hljs-number">0</span><br>        echo <span class="hljs-string">&quot;-------------------------------------------------------------------&quot;</span><br>        echo -e <span class="hljs-string">&quot;请访问链接: \E[32;1mhttp://$&#123;HARBOR_IP&#125;/\E[0m&quot;</span> <br>		echo -e <span class="hljs-string">&quot;用户和密码: \E[32;1madmin/$&#123;HARBOR_ADMIN_PASSWORD&#125;\E[0m&quot;</span> <br>    <span class="hljs-keyword">else</span><br>        color <span class="hljs-string">&quot;Harbor安装失败!&quot;</span> <span class="hljs-number">1</span><br>        <span class="hljs-keyword">exit</span><br>    fi <br>&#125;<br><br><br><br>docker info  &amp;&gt; <span class="hljs-regexp">/dev/</span>null  &amp;&amp; <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span><span class="hljs-string">&quot;Docker已安装&quot;</span><span class="hljs-variable">$&#123;END&#125;</span> || install_docker<br><br>docker-compose --version &amp;&gt; <span class="hljs-regexp">/dev/</span>null &amp;&amp; <span class="hljs-variable">$&#123;COLOR_FAILURE&#125;</span><span class="hljs-string">&quot;Docker Compose已安装&quot;</span><span class="hljs-variable">$&#123;END&#125;</span> || install_docker_compose<br><br>install_harbor<br></code></pre></td></tr></table></figure>
+
+<h5 id="2-3-登陆Harbor-web页面，账号admin-密码123456"><a href="#2-3-登陆Harbor-web页面，账号admin-密码123456" class="headerlink" title="2.3 登陆Harbor web页面，账号admin,密码123456"></a>2.3 登陆Harbor web页面，账号admin,密码123456<img src="image-20230906151707752.png" srcset="/img/loading.gif" lazyload alt="image-20230906151707752"></h5><h5 id="2-4-新建项目test。"><a href="#2-4-新建项目test。" class="headerlink" title="2.4 新建项目test。"></a>2.4 新建项目test。</h5><p><img src="image-20230906151810239.png" srcset="/img/loading.gif" lazyload alt="image-20230906151810239"></p>
+<p><img src="image-20230906151901510.png" srcset="/img/loading.gif" lazyload alt="image-20230906151901510"></p>
+<p><img src="image-20230906151935460.png" srcset="/img/loading.gif" lazyload alt="image-20230906151935460"></p>
+<h5 id="2-5-开始在10-0-0-133上传镜像，先安装好docker和准备好需要上传的镜像文件。"><a href="#2-5-开始在10-0-0-133上传镜像，先安装好docker和准备好需要上传的镜像文件。" class="headerlink" title="2.5 开始在10.0.0.133上传镜像，先安装好docker和准备好需要上传的镜像文件。"></a>2.5 开始在10.0.0.133上传镜像，先安装好docker和准备好需要上传的镜像文件。</h5><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs awk">[root@Rocky8 ~]<span class="hljs-comment"># cat /etc/docker/daemon.json #在daemon.json文件中添加harbor服务器信任，因为这边使用http没有使用https不添加信任的话，上传镜像会报错。</span><br>&#123;<br>  <span class="hljs-string">&quot;registry-mirrors&quot;</span>: [<span class="hljs-string">&quot;https://lhpac0xk.mirror.aliyuncs.com&quot;</span>],<br>  <span class="hljs-string">&quot;insecure-registries&quot;</span>:[<span class="hljs-string">&quot;10.0.0.136&quot;</span>]<br>&#125;<br><br>[root@Rocky8 ~]<span class="hljs-comment"># docker login 10.0.0.136 #先登陆Hatbor</span><br>Username: admin	  <br>Password: <br>WARNING! Your password will be stored unencrypted <span class="hljs-keyword">in</span> <span class="hljs-regexp">/root/</span>.docker/config.json.<br>Configure a credential helper to remove this warning. See<br>https:<span class="hljs-regexp">//</span>docs.docker.com<span class="hljs-regexp">/engine/</span>reference<span class="hljs-regexp">/commandline/</span>login/<span class="hljs-comment">#credentials-store</span><br><br>[root@Rocky8 ~]<span class="hljs-comment"># cat .docker/config.json #查看登陆信息</span><br>&#123;<br>	<span class="hljs-string">&quot;auths&quot;</span>: &#123;<br>		<span class="hljs-string">&quot;10.0.0.136&quot;</span>: &#123;<br>			<span class="hljs-string">&quot;auth&quot;</span>: <span class="hljs-string">&quot;YWRtaW46MTIzNDU2&quot;</span><br>		&#125;<br>	&#125;<br>&#125;<br><br>[root@Rocky8 ~]<span class="hljs-comment"># docker tag nginx-rocky2:1.20 10.0.0.136/test/nginx-rocky2:1.20 #给需要上传的镜像添加标签</span><br>[root@Rocky8 ~]<span class="hljs-comment"># docker push 10.0.0.136/test/nginx-rocky2:1.20 #上传镜像</span><br>The push refers to repository [<span class="hljs-number">10.0</span>.<span class="hljs-number">0.136</span><span class="hljs-regexp">/test/</span>nginx-rocky2]<br><span class="hljs-number">8644</span>a12385cf: Pushed <br><span class="hljs-number">3977</span>ac14dc8c: Pushed <br>b584a47f16e4: Pushed <br>f2f1bf5c3748: Pushed <br><span class="hljs-number">65</span>dbea0a4b39: Pushed <br><span class="hljs-number">1.20</span>: digest: sha256:da1791b11a5293dea7889d9e84c05ac6a3cf97a171ae40d75508899c3bac06c2 size: <span class="hljs-number">1368</span><br></code></pre></td></tr></table></figure>
+
+<h5 id="2-6-在web页面查看镜像是否上传成功。"><a href="#2-6-在web页面查看镜像是否上传成功。" class="headerlink" title="2.6. 在web页面查看镜像是否上传成功。"></a>2.6. 在web页面查看镜像是否上传成功。</h5><p><img src="image-20230906154644387.png" srcset="/img/loading.gif" lazyload alt="image-20230906154644387"></p>
+<h5 id="2-7-拉取镜像。"><a href="#2-7-拉取镜像。" class="headerlink" title="2.7 拉取镜像。"></a>2.7 拉取镜像。</h5><figure class="highlight accesslog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs accesslog"><span class="hljs-string">[root@Rocky8 ~]</span># docker pull <span class="hljs-number">10</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">136</span>/test/nginx-rocky2:<span class="hljs-number">1</span>.<span class="hljs-number">20</span><br><span class="hljs-number">1</span>.<span class="hljs-number">20</span>: Pulling from test/nginx-rocky2<br>72a2451028f1: Pull complete <br>83000833e0cd: Pull complete <br>f78a8841ef05: Pull complete <br>0ec5e5f245f1: Pull complete <br>b1f4dc192ebb: Pull complete <br>Digest: sha256:da1791b11a5293dea7889d9e84c05ac6a3cf97a171ae40d75508899c3bac06c2<br>Status: Downloaded newer image for <span class="hljs-number">10</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">136</span>/test/nginx-rocky2:<span class="hljs-number">1</span>.<span class="hljs-number">20</span><br><span class="hljs-number">10.0.0.136</span>/test/nginx-rocky2:<span class="hljs-number">1</span>.<span class="hljs-number">20</span><br><span class="hljs-string">[root@Rocky8 ~]</span># docker images<br>REPOSITORY                     TAG             IMAGE ID       CREATED         SIZE<br><span class="hljs-number">10.0.0.136</span>/test/nginx-rocky2   <span class="hljs-number">1</span>.<span class="hljs-number">20</span>            80ce005ca7b7   <span class="hljs-number">3</span> days ago      528MB<br><span class="hljs-number">10.0.0.136</span>/test/mysql          <span class="hljs-number">8</span>.<span class="hljs-number">0</span>.<span class="hljs-number">29</span>-oracle   33037edcac9b   <span class="hljs-number">14</span> months ago   444MB<br><br></code></pre></td></tr></table></figure>
+
+<h4 id="3、用haproxy实现两个web服务器的负载均衡。"><a href="#3、用haproxy实现两个web服务器的负载均衡。" class="headerlink" title="3、用haproxy实现两个web服务器的负载均衡。"></a>3、用haproxy实现两个web服务器的负载均衡。</h4><h5 id="3-1-使用haproxy实现两个harbor镜像仓库的HA和负载均衡"><a href="#3-1-使用haproxy实现两个harbor镜像仓库的HA和负载均衡" class="headerlink" title="3.1 使用haproxy实现两个harbor镜像仓库的HA和负载均衡"></a>3.1 使用haproxy实现两个harbor镜像仓库的HA和负载均衡</h5><p>环境准备</p>
+<figure class="highlight accesslog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs accesslog">准备<span class="hljs-number">5</span>台主机分别为<br><span class="hljs-number">10.0.0.137</span>,<span class="hljs-number">138</span> 安装好harbor服务<br><span class="hljs-number">10.0.0.134</span> HAproxy<br><span class="hljs-number">192.168.10.200</span> cleant<br>DNS解析服务器  解析：www.xinqi66.org <span class="hljs-number">192</span>.<span class="hljs-number">168</span>.<span class="hljs-number">10</span>.<span class="hljs-number">100</span><br></code></pre></td></tr></table></figure>
+
+<p>架构图</p>
+<p><img src="image-20230908104207289.png" srcset="/img/loading.gif" lazyload alt="image-20230908104207289"></p>
+<h5 id="3-2-在安装好的harbor上实现高可用"><a href="#3-2-在安装好的harbor上实现高可用" class="headerlink" title="3.2 在安装好的harbor上实现高可用"></a>3.2 在安装好的harbor上实现高可用</h5><h5 id="分别在harbor137和138上配置双向同步。新建仓库目标和，复制管理项目，137地址指向138。138地址指向137。"><a href="#分别在harbor137和138上配置双向同步。新建仓库目标和，复制管理项目，137地址指向138。138地址指向137。" class="headerlink" title="分别在harbor137和138上配置双向同步。新建仓库目标和，复制管理项目，137地址指向138。138地址指向137。"></a>分别在harbor137和138上配置双向同步。新建仓库目标和，复制管理项目，137地址指向138。138地址指向137。</h5><p><img src="image-20230908104726984.png" srcset="/img/loading.gif" lazyload alt="image-20230908104726984"></p>
+<p><img src="image-20230908104919935.png" srcset="/img/loading.gif" lazyload alt="image-20230908104919935"></p>
+<p><img src="image-20230908105042285.png" srcset="/img/loading.gif" lazyload alt="image-20230908105042285"></p>
+<h5 id="3-3-创建复制规则"><a href="#3-3-创建复制规则" class="headerlink" title="3.3 创建复制规则"></a>3.3 创建复制规则</h5><p><img src="image-20230908105437732.png" srcset="/img/loading.gif" lazyload alt="image-20230908105437732"></p>
+<p><img src="image-20230908105254845.png" srcset="/img/loading.gif" lazyload alt="image-20230908105254845"></p>
+<p><img src="image-20230908105323990.png" srcset="/img/loading.gif" lazyload alt="image-20230908105323990"></p>
+<h5 id="3-4-分别在137和138上上传镜像查看镜像是否能够复制到对方仓库中"><a href="#3-4-分别在137和138上上传镜像查看镜像是否能够复制到对方仓库中" class="headerlink" title="3.4 分别在137和138上上传镜像查看镜像是否能够复制到对方仓库中"></a>3.4 分别在137和138上上传镜像查看镜像是否能够复制到对方仓库中</h5><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><code class="hljs awk">[root@Rocky8 ~]<span class="hljs-comment"># cat /etc/docker/daemon.json #添加信任地址</span><br>&#123;<br>  <span class="hljs-string">&quot;registry-mirrors&quot;</span>: [<span class="hljs-string">&quot;https://lhpac0xk.mirror.aliyuncs.com&quot;</span>],<br>  <span class="hljs-string">&quot;insecure-registries&quot;</span>:[<span class="hljs-string">&quot;10.0.0.137&quot;</span>,<span class="hljs-string">&quot;10.0.0.138&quot;</span>]<br>&#125;<br>[root@Rocky8 ~]<span class="hljs-comment"># systemctl restart docker.service #重启服务</span><br><br><span class="hljs-comment">#登陆137</span><br>[root@Rocky8 ~]<span class="hljs-comment"># docker login 10.0.0.137</span><br>Username: admin<br>Password: <br>WARNING! Your password will be stored unencrypted <span class="hljs-keyword">in</span> <span class="hljs-regexp">/root/</span>.docker/config.json.<br>Configure a credential helper to remove this warning. See<br>https:<span class="hljs-regexp">//</span>docs.docker.com<span class="hljs-regexp">/engine/</span>reference<span class="hljs-regexp">/commandline/</span>login/<span class="hljs-comment">#credentials-store</span><br><br>Login Succeeded<br><span class="hljs-comment">#登陆138</span><br>[root@Rocky8 ~]<span class="hljs-comment"># docker login 10.0.0.138 </span><br>Username: admin	  <br>Password: <br>WARNING! Your password will be stored unencrypted <span class="hljs-keyword">in</span> <span class="hljs-regexp">/root/</span>.docker/config.json.<br>Configure a credential helper to remove this warning. See<br>https:<span class="hljs-regexp">//</span>docs.docker.com<span class="hljs-regexp">/engine/</span>reference<span class="hljs-regexp">/commandline/</span>login/<span class="hljs-comment">#credentials-store</span><br><br>Login Succeeded<br><br><br><br>[root@Rocky8 ~]<span class="hljs-comment"># docker push 10.0.0.137/hatest/mysql:8.0.29-oracle</span><br>The push refers to repository [<span class="hljs-number">10.0</span>.<span class="hljs-number">0.137</span><span class="hljs-regexp">/hatest/my</span>sql]<br><span class="hljs-number">8613</span>b3ca0560: Pushed <br>ffce1106e775: Pushed <br><span class="hljs-number">25</span>dc86c6646d: Pushed <br><span class="hljs-number">4</span>b2f0167d834: Pushed <br><span class="hljs-number">5162</span>a1b305a9: Pushed <br><span class="hljs-number">35</span>dd272baf55: Pushed <br>ea8b5bae0f85: Pushed <br>c1b9bd4130df: Pushed <br>f1ea50319462: Pushed <br><span class="hljs-number">27</span>df4ae8cdd9: Pushed <br>c6c89a36c214: Pushed <br><span class="hljs-number">8.0</span>.<span class="hljs-number">29</span>-oracle: digest: sha256:<span class="hljs-number">44</span>f98f4dd825a945d2a6a4b7b2f14127b5d07c5aaa07d9d232c2<br>[root@Rocky8 ~]<span class="hljs-comment"># crontab -l</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="image-20230908111116050.png" srcset="/img/loading.gif" lazyload alt="image-20230908111116050"></p>
+<h5 id="3-5-配置HAProxy作为反向代理"><a href="#3-5-配置HAProxy作为反向代理" class="headerlink" title="3.5 配置HAProxy作为反向代理"></a>3.5 配置HAProxy作为反向代理</h5><h5 id="3-6-使用脚本编译安装HAProxy-先下载lua和HAProxy源码编译包"><a href="#3-6-使用脚本编译安装HAProxy-先下载lua和HAProxy源码编译包" class="headerlink" title="3.6 使用脚本编译安装HAProxy,先下载lua和HAProxy源码编译包"></a>3.6 使用脚本编译安装HAProxy,先下载lua和HAProxy源码编译包</h5><p><a target="_blank" rel="noopener" href="http://www.lua.org/download.html">http://www.lua.org/download.html</a>     lua下载地址</p>
+<p><a target="_blank" rel="noopener" href="http://www.haproxy.org/#down">http://www.haproxy.org/#down</a>          HAProxy下载地址</p>
+<p><a target="_blank" rel="noopener" href="http://www.haproxy.org/download/2.6/src/haproxy-2.6.15.tar.gz">http://www.haproxy.org/download/2.6/src/haproxy-2.6.15.tar.gz</a></p>
+<p><img src="image-20230908133432932.png" srcset="/img/loading.gif" lazyload alt="image-20230908133432932"></p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br></pre></td><td class="code"><pre><code class="hljs awk">[root@Rocky8 ~]<span class="hljs-comment"># tree</span><br>.<br>├── anaconda-ks.cfg<br>├── haproxy-<span class="hljs-number">2.6</span>.<span class="hljs-number">15</span>.tar.gz<br>├── install_haproxy.sh<br>└── lua-<span class="hljs-number">5.4</span>.<span class="hljs-number">6</span>.tar.gz<br><br><span class="hljs-number">0</span> directories, <span class="hljs-number">4</span> files<br>[root@Rocky8 ~]<span class="hljs-comment"># vim install_haproxy.sh </span><br><span class="hljs-comment">#!/bin/bash</span><br><span class="hljs-comment">#</span><br><span class="hljs-comment">#******************************************************************************</span><br><span class="hljs-comment">#Author:            xinqi66</span><br><span class="hljs-comment">#QQ:                477681339</span><br><span class="hljs-comment">#Date:              2023-09-08</span><br><span class="hljs-comment">#FileName:          install_haproxy.sh</span><br><span class="hljs-comment">#Description:       install haproxy for centos 7/8 &amp; ubuntu 18.04/20.04</span><br><span class="hljs-comment">#Copyright (C):     2023 All rights reserved</span><br><span class="hljs-comment">#******************************************************************************</span><br><br>HAPROXY_VERSION=<span class="hljs-number">2.6</span>.<span class="hljs-number">15</span><br>HAPROXY_FILE=haproxy-<span class="hljs-variable">$&#123;HAPROXY_VERSION&#125;</span>.tar.gz<br>LUA_VERSION=<span class="hljs-number">5.4</span>.<span class="hljs-number">6</span><br>LUA_FILE=lua-<span class="hljs-variable">$&#123;LUA_VERSION&#125;</span>.tar.gz<br>HAPROXY_INSTALL_DIR=<span class="hljs-regexp">/apps/</span>haproxy<br><br>SRC_DIR=<span class="hljs-regexp">/usr/</span>local/src<br>CWD=`pwd`<br>CPUS=`lscpu |awk <span class="hljs-string">&#x27;/^CPU\(s\)/&#123;print $2&#125;&#x27;</span>`<br>LOCAL_IP=$(hostname -I|awk <span class="hljs-string">&#x27;&#123;print $1&#125;&#x27;</span>)<br><br>STATS_AUTH_USER=admin<br>STATS_AUTH_PASSWORD=<span class="hljs-number">123456</span><br><br>VIP=<span class="hljs-number">192.168</span>.<span class="hljs-number">10.100</span><br>MASTER1=<span class="hljs-number">192.168</span>.<span class="hljs-number">10.101</span><br>MASTER2=<span class="hljs-number">192.168</span>.<span class="hljs-number">10.102</span><br>MASTER3=<span class="hljs-number">192.168</span>.<span class="hljs-number">10.103</span><br><br>. <span class="hljs-regexp">/etc/</span>os-release<br><br>color () &#123;<br>    RES_COL=<span class="hljs-number">60</span><br>    MOVE_TO_COL=<span class="hljs-string">&quot;echo -en \\033[$&#123;RES_COL&#125;G&quot;</span><br>    SETCOLOR_SUCCESS=<span class="hljs-string">&quot;echo -en \\033[1;32m&quot;</span><br>    SETCOLOR_FAILURE=<span class="hljs-string">&quot;echo -en \\033[1;31m&quot;</span><br>    SETCOLOR_WARNING=<span class="hljs-string">&quot;echo -en \\033[1;33m&quot;</span><br>    SETCOLOR_NORMAL=<span class="hljs-string">&quot;echo -en \E[0m&quot;</span><br>    echo -n <span class="hljs-string">&quot;$1&quot;</span> &amp;&amp; <span class="hljs-variable">$MOVE_TO_COL</span><br>    echo -n <span class="hljs-string">&quot;[&quot;</span><br>    <span class="hljs-keyword">if</span> [ <span class="hljs-variable">$2</span> = <span class="hljs-string">&quot;success&quot;</span> -o <span class="hljs-variable">$2</span> = <span class="hljs-string">&quot;0&quot;</span> ] ;then<br>        <span class="hljs-variable">$&#123;SETCOLOR_SUCCESS&#125;</span><br>        echo -n $<span class="hljs-string">&quot;  OK  &quot;</span>    <br>    elif [ <span class="hljs-variable">$2</span> = <span class="hljs-string">&quot;failure&quot;</span> -o <span class="hljs-variable">$2</span> = <span class="hljs-string">&quot;1&quot;</span>  ] ;then <br>        <span class="hljs-variable">$&#123;SETCOLOR_FAILURE&#125;</span><br>        echo -n $<span class="hljs-string">&quot;FAILED&quot;</span><br>    <span class="hljs-keyword">else</span><br>        <span class="hljs-variable">$&#123;SETCOLOR_WARNING&#125;</span><br>        echo -n $<span class="hljs-string">&quot;WARNING&quot;</span><br>    fi<br>    <span class="hljs-variable">$&#123;SETCOLOR_NORMAL&#125;</span><br>    echo -n <span class="hljs-string">&quot;]&quot;</span><br>    echo <br>&#125;<br><br><br>check_file ()&#123;<br>    <span class="hljs-keyword">if</span> [ ! -e <span class="hljs-variable">$&#123;LUA_FILE&#125;</span> ];then<br>        color <span class="hljs-string">&quot;缺少$&#123;LUA_FILE&#125;文件!&quot;</span> <span class="hljs-number">1</span><br>        <span class="hljs-keyword">exit</span><br>    elif [ ! -e <span class="hljs-variable">$&#123;HAPROXY_FILE&#125;</span> ];then<br>        color <span class="hljs-string">&quot;缺少$&#123;HAPROXY_FILE&#125;文件!&quot;</span> <span class="hljs-number">1</span><br>        <span class="hljs-keyword">exit</span><br>    <span class="hljs-keyword">else</span><br>        color <span class="hljs-string">&quot;相关文件已准备!&quot;</span> <span class="hljs-number">0</span><br>    fi<br>&#125;<br><br>install_haproxy()&#123;<br>    <span class="hljs-keyword">if</span> [ <span class="hljs-variable">$ID</span> = <span class="hljs-string">&quot;centos&quot;</span> -o <span class="hljs-variable">$ID</span> = <span class="hljs-string">&quot;rocky&quot;</span> ];then<br>        yum -y install gcc make gcc-c++ glibc glibc-devel pcre pcre-devel openssl openssl-devel systemd-devel libtermcap-devel ncurses-devel libevent-devel readline-devel <br>    elif [ <span class="hljs-variable">$ID</span> = <span class="hljs-string">&quot;ubuntu&quot;</span> ];then<br>        apt update <br>        apt -y install gcc make openssl libssl-dev libpcre3 libpcre3-dev zlib1g-dev  libreadline-dev libsystemd-dev <br>    <span class="hljs-keyword">else</span><br>        color <span class="hljs-string">&quot;不支持此操作系统!&quot;</span> <span class="hljs-number">1</span><br>    fi<br>    [ $? -eq <span class="hljs-number">0</span> ] ||  &#123; color <span class="hljs-string">&#x27;HAPROXY 启动失败,退出!&#x27;</span> <span class="hljs-number">1</span>; <span class="hljs-keyword">exit</span>; &#125;<br>    tar xf <span class="hljs-variable">$&#123;LUA_FILE&#125;</span> -C <span class="hljs-variable">$&#123;SRC_DIR&#125;</span><br>    LUA_DIR=<span class="hljs-variable">$&#123;LUA_FILE%.tar*&#125;</span><br>    cd <span class="hljs-variable">$&#123;SRC_DIR&#125;</span>/<span class="hljs-variable">$&#123;LUA_DIR&#125;</span><br>    make all test<br>    cd <span class="hljs-variable">$&#123;CWD&#125;</span><br>    tar xf <span class="hljs-variable">$&#123;HAPROXY_FILE&#125;</span> -C <span class="hljs-variable">$&#123;SRC_DIR&#125;</span><br>    HAPROXY_DIR=<span class="hljs-variable">$&#123;HAPROXY_FILE%.tar*&#125;</span><br>    cd <span class="hljs-variable">$&#123;SRC_DIR&#125;</span>/<span class="hljs-variable">$&#123;HAPROXY_DIR&#125;</span><br>    make -j <span class="hljs-variable">$&#123;CPUS&#125;</span> ARCH=x86_64 TARGET=linux-glibc USE_PCRE=<span class="hljs-number">1</span> USE_OPENSSL=<span class="hljs-number">1</span> USE_ZLIB=<span class="hljs-number">1</span> USE_SYSTEMD=<span class="hljs-number">1</span> USE_CPU_AFFINITY=<span class="hljs-number">1</span> USE_LUA=<span class="hljs-number">1</span> LUA_INC=<span class="hljs-variable">$&#123;SRC_DIR&#125;</span><span class="hljs-regexp">/$&#123;LUA_DIR&#125;/</span>src<span class="hljs-regexp">/ LUA_LIB=$&#123;SRC_DIR&#125;/</span><span class="hljs-variable">$&#123;LUA_DIR&#125;</span><span class="hljs-regexp">/src/</span> PREFIX=<span class="hljs-variable">$&#123;HAPROXY_INSTALL_DIR&#125;</span><br>    make install PREFIX=<span class="hljs-variable">$&#123;HAPROXY_INSTALL_DIR&#125;</span><br>    [ $? -eq <span class="hljs-number">0</span> ] &amp;&amp; color <span class="hljs-string">&quot;HAPROXY编译安装成功&quot;</span> <span class="hljs-number">0</span> ||  &#123; color <span class="hljs-string">&quot;HAPROXY编译安装失败,退出!&quot;</span> <span class="hljs-number">1</span>;<span class="hljs-keyword">exit</span>; &#125;<br>    <br>    [ -L <span class="hljs-regexp">/usr/</span>sbin<span class="hljs-regexp">/haproxy ] || ln -s $&#123;HAPROXY_INSTALL_DIR&#125;/</span>sbin<span class="hljs-regexp">/haproxy /u</span>sr<span class="hljs-regexp">/sbin/</span> &amp;&gt; <span class="hljs-regexp">/dev/</span>null<br>    [ -d <span class="hljs-regexp">/etc/</span>haproxy ] || mkdir <span class="hljs-regexp">/etc/</span>haproxy &amp;&gt; <span class="hljs-regexp">/dev/</span>null  <br>    [ -d <span class="hljs-regexp">/var/</span>lib<span class="hljs-regexp">/haproxy/</span> ] || mkdir -p <span class="hljs-regexp">/var/</span>lib<span class="hljs-regexp">/haproxy/</span> &amp;&gt; <span class="hljs-regexp">/dev/</span>null<br>    cat &gt; <span class="hljs-regexp">/etc/</span>haproxy/haproxy.cfg &lt;&lt;-EOF<br>global<br>maxconn <span class="hljs-number">100000</span><br>stats socket <span class="hljs-regexp">/var/</span>lib<span class="hljs-regexp">/haproxy/</span>haproxy.sock mode <span class="hljs-number">600</span> level admin<br>uid <span class="hljs-number">99</span><br>gid <span class="hljs-number">99</span><br>daemon<br><br>pidfile <span class="hljs-regexp">/var/</span>lib<span class="hljs-regexp">/haproxy/</span>haproxy.pid<br>log <span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span> local3 info<br><br>defaults<br>option http-keep-alive<br>option forwardfor<br>maxconn <span class="hljs-number">100000</span><br>mode http<br>timeout connect <span class="hljs-number">300000</span>ms<br>timeout client <span class="hljs-number">300000</span>ms<br>timeout server <span class="hljs-number">300000</span>ms<br><br>listen stats<br>    mode http<br>    bind <span class="hljs-number">0.0</span>.<span class="hljs-number">0.0</span>:<span class="hljs-number">9999</span><br>    stats enable<br>    log global<br>    stats uri /haproxy-status<br>    stats auth <span class="hljs-variable">$&#123;STATS_AUTH_USER&#125;</span>:<span class="hljs-variable">$&#123;STATS_AUTH_PASSWORD&#125;</span><br><br><span class="hljs-comment">#listen kubernetes-6443</span><br><span class="hljs-comment">#    bind $&#123;VIP&#125;:6443</span><br><span class="hljs-comment">#    mode tcp</span><br><span class="hljs-comment">#    log global</span><br><span class="hljs-comment">#    server $&#123;MASTER1&#125; $&#123;MASTER1&#125;:6443 check inter 3000 fall 2 rise 5</span><br><span class="hljs-comment">#    server $&#123;MASTER2&#125; $&#123;MASTER2&#125;:6443 check inter 3000 fall 2 rise 5</span><br><span class="hljs-comment">#    server $&#123;MASTER3&#125; $&#123;MASTER2&#125;:6443 check inter 3000 fall 2 rise 5</span><br><br>EOF<br>    <span class="hljs-comment">#echo &quot;PATH=$&#123;HAPROXY_INSTALL_DIR&#125;/sbin:$&#123;PATH&#125;&quot; &gt; /etc/profile.d/haproxy.sh</span><br>	groupadd -g <span class="hljs-number">99</span> haproxy<br>	useradd -u <span class="hljs-number">99</span> -g haproxy -d <span class="hljs-regexp">/var/</span>lib<span class="hljs-regexp">/haproxy -M -r -s /</span>sbin/nologin haproxy<br>	cat &gt; <span class="hljs-regexp">/lib/</span>systemd<span class="hljs-regexp">/system/</span>haproxy.service &lt;&lt;-EOF<br>[Unit]<br>Description=HAProxy Load Balancer<br>After=syslog.target network.target<br><br>[Service]<br>ExecStartPre=<span class="hljs-regexp">/usr/</span>sbin<span class="hljs-regexp">/haproxy -f /</span>etc<span class="hljs-regexp">/haproxy/</span>haproxy.cfg -c -q<br>ExecStart=<span class="hljs-regexp">/usr/</span>sbin<span class="hljs-regexp">/haproxy -Ws -f /</span>etc<span class="hljs-regexp">/haproxy/</span>haproxy.cfg -p <span class="hljs-regexp">/var/</span>lib<span class="hljs-regexp">/haproxy/</span>haproxy.pid<br>ExecReload=<span class="hljs-regexp">/bin/</span>kill -USR2 <span class="hljs-variable">$MAINPID</span><br><br>[Install]<br>WantedBy=multi-user.target<br>EOF<br>    systemctl daemon-reload<br>    systemctl enable --now haproxy <br>    systemctl is-active haproxy &amp;&gt; <span class="hljs-regexp">/dev/</span>null &amp;&amp; color <span class="hljs-string">&#x27;HAPROXY安装完成!&#x27;</span> <span class="hljs-number">0</span> ||  &#123; color <span class="hljs-string">&#x27;HAPROXY 启动失败,退出!&#x27;</span> <span class="hljs-number">1</span>; <span class="hljs-keyword">exit</span>; &#125;<br>    echo <span class="hljs-string">&quot;-------------------------------------------------------------------&quot;</span><br>    echo -e <span class="hljs-string">&quot;请访问链接: \E[32;1mhttp://$&#123;LOCAL_IP&#125;:9999/haproxy-status\E[0m&quot;</span><br>    echo -e <span class="hljs-string">&quot;用户和密码: \E[32;1m$&#123;STATS_AUTH_USER&#125;/$&#123;STATS_AUTH_PASSWORD&#125;\E[0m&quot;</span> <br>&#125;<br><br>main()&#123;<br>    check_file<br>    install_haproxy<br>&#125;<br><br>main<br><br><br>[root@Rocky8 ~]<span class="hljs-comment"># bash install_haproxy.sh #执行脚本</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="image-20230908134444815.png" srcset="/img/loading.gif" lazyload alt="image-20230908134444815"></p>
+<p>访问页面</p>
+<p><img src="image-20230908134810241.png" srcset="/img/loading.gif" lazyload alt="image-20230908134810241"></p>
+<p>配置HAProxy</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs yaml">[<span class="hljs-string">root@Rocky8</span> <span class="hljs-string">~</span>]<span class="hljs-comment"># vim /etc/haproxy/haproxy.cfg  #在配置文件最后添加下面的配置</span><br><span class="hljs-comment">#~~~~~~~</span><br><span class="hljs-comment">#~~~~~~~~~</span><br><span class="hljs-comment">#~~~~~~~~~~~</span><br><span class="hljs-comment">#~~~~~~~~~~~~</span><br><span class="hljs-comment">#这是一个前端配置部分，用于定义如何接收来自客户端的连接和流量。</span><br><span class="hljs-string">frontend</span> <span class="hljs-string">www.xinqi66.org_80</span> <span class="hljs-comment">#是此前端的名称，用于识别和引用此配置</span><br>    <span class="hljs-string">bind</span> <span class="hljs-number">192.168</span><span class="hljs-number">.10</span><span class="hljs-number">.100</span><span class="hljs-string">:80</span>  <span class="hljs-comment">#指定前端监听的IP地址和端口，这里是在IP地址  </span><br>    <span class="hljs-string">use_backend</span> <span class="hljs-string">www.xinqi66.org_80</span> <span class="hljs-comment">#声明在收到HTTP请求后，将使用名为 harbor_prot_http_nodes 的后端来处理请求。</span><br>    <br><span class="hljs-string">backend</span> <span class="hljs-string">www.xinqi66.org_80</span> <span class="hljs-comment">#这是一个后端配置部分，用于定义如何处理从前端接收到的HTTP请求，并将它们转发到一组服务器。</span><br>    <span class="hljs-string">cookie</span> <span class="hljs-string">SERVERID</span> <span class="hljs-string">insert</span> <span class="hljs-string">indirect</span> <span class="hljs-string">nocache</span> <span class="hljs-comment">#cookie会话保持</span><br>    <span class="hljs-string">server</span> <span class="hljs-string">web1</span> <span class="hljs-number">10.0</span><span class="hljs-number">.0</span><span class="hljs-number">.137</span><span class="hljs-string">:80</span> <span class="hljs-string">check</span> <span class="hljs-string">inter</span> <span class="hljs-number">3000 </span><span class="hljs-string">fall</span> <span class="hljs-number">3</span> <span class="hljs-string">rise</span> <span class="hljs-number">5</span> <span class="hljs-string">cookie</span> <span class="hljs-string">web1</span><br>    <span class="hljs-string">server</span> <span class="hljs-string">web2</span> <span class="hljs-number">10.0</span><span class="hljs-number">.0</span><span class="hljs-number">.138</span><span class="hljs-string">:80</span> <span class="hljs-string">check</span> <span class="hljs-string">inter</span> <span class="hljs-number">3000 </span><span class="hljs-string">fall</span> <span class="hljs-number">3</span> <span class="hljs-string">rise</span> <span class="hljs-number">5</span> <span class="hljs-string">cookie</span> <span class="hljs-string">web2</span><br>    <span class="hljs-comment">#配置了一个后端服务器。10.0.0.137:80 是服务器的IP地址和端口号。check inter 3000 fall 3 rise 5 指定了用于健康检查的参数。它意味着HAProxy每隔3秒尝试一次检查，如果在5次尝试中有3次失败，则认为服务器不可用，如果在5次尝试中有5次成功，则认为服务器恢复可用状态。cookie web1/2表示访问该IP地址拿到的cookie名字</span><br><br><span class="hljs-comment"># 注意这边默认没有配置调度算法默认为轮询</span><br><span class="hljs-comment">#检查配置文件格式是否正确</span><br>[<span class="hljs-string">root@Rocky8</span> <span class="hljs-string">~</span>]<span class="hljs-comment"># haproxy -c -f /etc/haproxy/haproxy.cfg #检查配置文件语法</span><br>[<span class="hljs-string">root@Rocky8</span> <span class="hljs-string">~</span>]<span class="hljs-comment"># systemctl restart haproxy.service  #重启服务</span><br>[<span class="hljs-string">root@Rocky8</span> <span class="hljs-string">~</span>]<span class="hljs-comment"># curl -i 192.168.10.100 查看是否已经启用cookie</span><br><span class="hljs-string">HTTP/1.1</span> <span class="hljs-number">200</span> <span class="hljs-string">OK</span><br><span class="hljs-attr">server:</span> <span class="hljs-string">nginx</span><br><span class="hljs-attr">date:</span> <span class="hljs-string">Mon,</span> <span class="hljs-number">11</span> <span class="hljs-string">Sep</span> <span class="hljs-number">2023 01:47:46 </span><span class="hljs-string">GMT</span><br><span class="hljs-attr">content-type:</span> <span class="hljs-string">text/html</span><br><span class="hljs-attr">content-length:</span> <span class="hljs-number">906</span><br><span class="hljs-attr">last-modified:</span> <span class="hljs-string">Tue,</span> <span class="hljs-number">28</span> <span class="hljs-string">Jun</span> <span class="hljs-number">2022 18:25:26 </span><span class="hljs-string">GMT</span><br><span class="hljs-attr">etag:</span> <span class="hljs-string">&quot;62bb4796-38a&quot;</span><br><span class="hljs-attr">cache-control:</span> <span class="hljs-literal">no</span><span class="hljs-string">-store,</span> <span class="hljs-literal">no</span><span class="hljs-string">-cache,</span> <span class="hljs-string">must-revalidate</span><br><span class="hljs-attr">accept-ranges:</span> <span class="hljs-string">bytes</span><br><span class="hljs-attr">x-frame-options:</span> <span class="hljs-string">DENY</span><br><span class="hljs-attr">content-security-policy:</span> <span class="hljs-string">frame-ancestors</span> <span class="hljs-string">&#x27;none&#x27;</span><br><span class="hljs-attr">set-cookie:</span> <span class="hljs-string">SERVERID=web2;</span> <span class="hljs-string">path=/</span> <span class="hljs-comment">#这里拿到的是cookie web2，后续这台host访问都会访问web2</span><br></code></pre></td></tr></table></figure>
+
+<h5 id="3-7-在192-168-10-200上配置好DNS并访问HAproxy地址FQDN，显示HARBOR页面。"><a href="#3-7-在192-168-10-200上配置好DNS并访问HAproxy地址FQDN，显示HARBOR页面。" class="headerlink" title="3.7 在192.168.10.200上配置好DNS并访问HAproxy地址FQDN，显示HARBOR页面。"></a>3.7 在192.168.10.200上配置好DNS并访问HAproxy地址FQDN，显示HARBOR页面。</h5><p><img src="image-20230911095613914.png" srcset="/img/loading.gif" lazyload alt="image-20230911095613914"></p>
+<p>查看HAproxy状态页面，查看web1,web2启动状态。</p>
+<p><img src="image-20230911100033815.png" srcset="/img/loading.gif" lazyload alt="image-20230911100033815"></p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/09/14/%E4%BD%BF%E7%94%A8keepalived%E5%81%9Anginx%E9%AB%98%E5%8F%AF%E7%94%A8-redis3%E8%8A%82%E7%82%B9%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">使用keepalived做nginx高可用,redis3节点集群部署</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/09/04/Docker%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F/">
+                        <span class="hidden-mobile">Docker创建容器镜像</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;TOC</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

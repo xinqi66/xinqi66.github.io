@@ -1,0 +1,580 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1、Logstash利用redis做缓存从filebeat收集nginx日志和系统日志。实验目的： 将nginx服务器中的系统日志，访问日志和错误日志通过filebeat收集到redis缓存数据库中，利用 Redis 缓存日志数据,主要解决应用解耦，异步消息，流量削锋等问题。然后通过另外的logstash将redis服务器的数据取出在写入到elasticsearch(以下简称ES)服务器。最后在k">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Logstash利用redis做缓存从filebeat收集nginx日志和系统日志">
+<meta property="og:url" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/index.html">
+<meta property="og:site_name" content="5-12 23:30">
+<meta property="og:description" content="1、Logstash利用redis做缓存从filebeat收集nginx日志和系统日志。实验目的： 将nginx服务器中的系统日志，访问日志和错误日志通过filebeat收集到redis缓存数据库中，利用 Redis 缓存日志数据,主要解决应用解耦，异步消息，流量削锋等问题。然后通过另外的logstash将redis服务器的数据取出在写入到elasticsearch(以下简称ES)服务器。最后在k">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230922093633179.png">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230922135725563.png">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230922135834129.png">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230922135940942.png">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230922140015626.png">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230922140033276.png">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230922140101705-1695777765245.png">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-cde10814405a7d379a3636c8ee7e2eaa_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-bdea99a7bc091ccdeb018166814918d8_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-cbdb1694c4df97d2b7dba4df7f036f45_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-a4df5f36af1844ebfda3f00973873d8d_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-d9f92fa34ebdb195a32c3d36e101739e_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-730368e449c84677973c40341c0dbdf7_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-664494c752cbab6a346b4220591175ec_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-8a639580f29d26d89f29c422031a5318_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-49054c84203cb103156156b5a0b5f70d_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-01fb0811129277e0dba0021abe2fde0e_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-2847087a1ca9b395330b40596744bfc6_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-2fffb9a20f65b722d63f8f2c9639962e_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-0872710215c7a8536241834f06af65ba_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/v2-62dd7d82b4ec1c2acfbdefc57fad4e4b_720w.webp">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230927093457485.png">
+<meta property="og:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230927093754568.png">
+<meta property="article:published_time" content="2023-09-27T22:42:45.000Z">
+<meta property="article:modified_time" content="2023-09-27T15:00:50.757Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/2023/09/27/Logstash%E5%88%A9%E7%94%A8redis%E5%81%9A%E7%BC%93%E5%AD%98%E4%BB%8Efilebeat%E6%94%B6%E9%9B%86nginx%E6%97%A5%E5%BF%97%E5%92%8C%E7%B3%BB%E7%BB%9F%E6%97%A5%E5%BF%97/image-20230922093633179.png">
+  
+  
+  <title>Logstash利用redis做缓存从filebeat收集nginx日志和系统日志 - 5-12 23:30</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.14","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                Home
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                Archives
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                Categories
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                Tags
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                About
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Logstash利用redis做缓存从filebeat收集nginx日志和系统日志">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2023-09-27 22:42" pubdate>
+        September 27, 2023 pm
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      16k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      131 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Logstash利用redis做缓存从filebeat收集nginx日志和系统日志</h1>
+            
+            <div class="markdown-body">
+              <h2 id="1、Logstash利用redis做缓存从filebeat收集nginx日志和系统日志。"><a href="#1、Logstash利用redis做缓存从filebeat收集nginx日志和系统日志。" class="headerlink" title="1、Logstash利用redis做缓存从filebeat收集nginx日志和系统日志。"></a>1、Logstash利用redis做缓存从filebeat收集nginx日志和系统日志。</h2><p>实验目的：</p>
+<p>将nginx服务器中的系统日志，访问日志和错误日志通过filebeat收集到redis缓存数据库中，利用 Redis 缓存日志数据,主要解决应用解耦，异步消息，流量削锋等问题。然后通过另外的logstash将redis服<br>务器的数据取出在写入到elasticsearch(以下简称ES)服务器。最后在kibana中建立日志索引，查看索引中的日志。</p>
+<p>ELK简介：</p>
+<p>ELK是由一家elastic公司开发的三个开源项目的首字母缩写<br>这三个项目分别是：Elasticsearch、Logstash 和 Kibana。三个项目各有不同的功能<br>之后又增加了许多新项目, 于是 从5.X版本后改名为Elastic Stack<br>Elastic Stack 是一套适用于数据采集、扩充、存储、分析和可视化的免费开源工具。人们通常将 Elastic<br>Stack 称为 ELK Stack（代指 Elasticsearch、Logstash 和 Kibana），目前 Elastic Stack 包括一系列丰<br>富的轻量型数据采集代理，这些代理统称为 Beats，可用来向 Elasticsearch 发送数据。<br>Elasticsearch 是一个实时的全文搜索,存储库和分析引擎。<br>Logstash 是服务器端数据处理的管道，能够同时从多个来源采集数据，转换数据，然后将数据发送到诸<br>如 Elasticsearch 等存储库中。<br>Kibana 则可以让用户在 Elasticsearch 中使用图形和图表对数据进行可视化。</p>
+<p>实验系统架构：本实验使用的linux系统版本为rocky8.5</p>
+<p>2023/09/27/Logstash利用redis做缓存从filebeat收集nginx日志和系统日志</p>
+<p><img src="image-20230922093633179.png" srcset="/img/loading.gif" lazyload alt="image-20230922093633179"></p>
+<p>实验步骤：</p>
+<p>准备以下rpm安装包</p>
+<p>elasticsearch-7.17.11-x86_64.rpm</p>
+<p>filebeat-7.17.11-x86_64.rpm</p>
+<p>kibana-7.17.11-x86_64.rpm</p>
+<p>logstash-7.17.11-x86_64.rpm</p>
+<p>下载地址：</p>
+<p><a target="_blank" rel="noopener" href="https://mirrors.tuna.tsinghua.edu.cn/elasticstack/">https://mirrors.tuna.tsinghua.edu.cn/elasticstack/</a></p>
+<h4 id="1-1-安装ES1-10-0-0-133-ES2-10-0-0-134-ES3-10-0-0-136"><a href="#1-1-安装ES1-10-0-0-133-ES2-10-0-0-134-ES3-10-0-0-136" class="headerlink" title="1.1 安装ES1-10.0.0.133,ES2-10.0.0.134,ES3-10.0.0.136"></a>1.1 安装ES1-10.0.0.133,ES2-10.0.0.134,ES3-10.0.0.136</h4><p>Elasticsearch 是一个分布式的免费开源搜索和分析引擎，适用于包括文本、数字、地理空间、结构化和<br>非结构化数据等在内的所有类型的数据。Elasticsearch 在 Apache Lucene 的基础上开发而成，由<br>Elasticsearch N.V.（即现在的 Elastic）于 2010 年首次发布。Elasticsearch 以其简单的 REST 风格<br>API、分布式特性、速度和可扩展性而闻名，是 Elastic Stack 的核心组件<br>Elasticsearch 支持数据的实时全文搜索搜索、支持分布式和高可用、提供API接口，可以处理大规模的<br>各种日志数据的处理，比如: Nginx、Tomcat、系统日志等功能。<br>Elasticsearch 基于 Java 语言开发，利用全文搜索引擎 Apache Lucene 实现</p>
+<figure class="highlight autoit"><table><tr><td class="gutter"><div class="code-wrapper"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></div></td><td class="code"><pre><code class="hljs autoit"><span class="hljs-meta">#系统优化配置最小4G内存2核CPU,内核优化</span><br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta">#echo <span class="hljs-string">&quot;vm.max_map_count = 262144&quot;</span> &gt;&gt; /etc/sysctl.conf</span><br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta">#echo <span class="hljs-string">&quot;fs.file-max = 1000000&quot;</span> &gt;&gt; /etc/sysctl.conf</span><br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta">#sysctl -p</span><br>vm.max_map_count = <span class="hljs-number">262144</span><br><br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta"># yum -y install elasticsearch-7.17.11-x86_64.rpm</span><br><br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta"># grep <span class="hljs-string">&quot;^[a-Z]&quot;</span> /etc/elasticsearch/elasticsearch.yml #修改每个节点的配置节点</span><br>cluster.name: ELK-Cluster<br>node.name: node<span class="hljs-number">-1</span> <span class="hljs-meta">#只需要修改此行，每个节点都不能相同</span><br>path.data: /var/lib/elasticsearch<br>path.logs: /var/<span class="hljs-built_in">log</span>/elasticsearch<br>bootstrap.memory_lock: <span class="hljs-literal">true</span><br>network.host: <span class="hljs-number">0.0</span><span class="hljs-number">.0</span><span class="hljs-number">.0</span><br>discovery.seed_hosts: [<span class="hljs-string">&quot;10.0.0.133&quot;</span>, <span class="hljs-string">&quot;10.0.0.134&quot;</span>,<span class="hljs-string">&quot;10.0.0.136&quot;</span>]<br>cluster.initial_master_nodes: [<span class="hljs-string">&quot;10.0.0.133&quot;</span>, <span class="hljs-string">&quot;10.0.0.134&quot;</span>,<span class="hljs-string">&quot;10.0.0.136&quot;</span>]<br>action.destructive_requires_name: <span class="hljs-literal">true</span><br>gateway.recover_after_nodes: <span class="hljs-number">2</span><br><br><span class="hljs-meta">#开启 bootstrap.memory_lock: true 导致无法启动的错误解决方法</span><br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta"># systemctl edit elasticsearch</span><br>[Service]<br>LimitMEMLOCK=infinity<br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta"># cat /etc/systemd/system/elasticsearch.service.d/override.conf</span><br>[Service]<br>LimitMEMLOCK=infinity<br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta"># systemctl daemon-reload</span><br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta"># systemctl restart elasticsearch.service</span><br><br><span class="hljs-meta">#查看es集群状态</span><br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta"># curl http://127.0.0.1:9200/_cat/health</span><br><span class="hljs-number">1695019355</span> <span class="hljs-number">06</span>:<span class="hljs-number">42</span>:<span class="hljs-number">35</span> ELK-Cluster green <span class="hljs-number">3</span> <span class="hljs-number">3</span> <span class="hljs-number">6</span> <span class="hljs-number">3</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> <span class="hljs-number">0</span> - <span class="hljs-number">100.0</span>%<br><br><span class="hljs-meta">#查看所有的节点信息</span><br>[root<span class="hljs-symbol">@es</span>-node1 ~]<span class="hljs-meta"># curl <span class="hljs-string">&#x27;http://127.0.0.1:9200/_cat/nodes?v&#x27;</span></span><br>ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role   master name<br><span class="hljs-number">10.0</span><span class="hljs-number">.0</span><span class="hljs-number">.133</span>           <span class="hljs-number">10</span>          <span class="hljs-number">82</span>   <span class="hljs-number">1</span>    <span class="hljs-number">0.00</span>    <span class="hljs-number">0.01</span>     <span class="hljs-number">0.03</span> cdfhilmrstw *      node<span class="hljs-number">-1</span><br><span class="hljs-number">10.0</span><span class="hljs-number">.0</span><span class="hljs-number">.136</span>           <span class="hljs-number">13</span>          <span class="hljs-number">97</span>   <span class="hljs-number">1</span>    <span class="hljs-number">0.04</span>    <span class="hljs-number">0.11</span>     <span class="hljs-number">0.08</span> cdfhilmrstw -      node<span class="hljs-number">-3</span><br><span class="hljs-number">10.0</span><span class="hljs-number">.0</span><span class="hljs-number">.134</span>           <span class="hljs-number">10</span>          <span class="hljs-number">88</span>   <span class="hljs-number">1</span>    <span class="hljs-number">0.05</span>    <span class="hljs-number">0.09</span>     <span class="hljs-number">0.06</span> cdfhilmrstw -      node<span class="hljs-number">-2</span><br></code></pre></td></tr></table></figure>
+
+<h4 id="1-2-安装ngxin-10-0-0-138"><a href="#1-2-安装ngxin-10-0-0-138" class="headerlink" title="1.2 安装ngxin-10.0.0.138"></a>1.2 安装ngxin-10.0.0.138</h4><figure class="highlight julia"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs julia">[root<span class="hljs-meta">@nginx</span> ~]<span class="hljs-comment"># yum -y install nginx</span><br>[root<span class="hljs-meta">@nginx</span> ~]<span class="hljs-comment"># vim /etc/nginx/nginx.conf #修改access日志格式为json格式</span><br>events &#123;<br>    worker_connections <span class="hljs-number">1024</span>;<br>&#125;<br><br>http &#123;<br>    log_format access_json &#x27;&#123;<span class="hljs-string">&quot;@timestamp&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$time_iso8601</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;host&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$server_addr</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;clientip&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$remote_addr</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;size&quot;</span>:$body_bytes_sent,&#x27;<br>        &#x27;<span class="hljs-string">&quot;responsetime&quot;</span>:$request_time,&#x27;<br>        &#x27;<span class="hljs-string">&quot;upstreamtime&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$upstream_response_time</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;upstreamhost&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$upstream_addr</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;http_host&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$host</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;uri&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$uri</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;domain&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$host</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;xff&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$http_x_forwarded_for</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;referer&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$http_referer</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;tcp_xff&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$proxy_protocol_addr</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;http_user_agent&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$http_user_agent</span>&quot;</span>,&#x27;<br>        &#x27;<span class="hljs-string">&quot;status&quot;</span>:<span class="hljs-string">&quot;<span class="hljs-variable">$status</span>&quot;</span>&#125;&#x27;;<br><br><br>    access_log  /var/log/nginx/access_json.log access_json ;<br><br>    <span class="hljs-comment">#access_log  /var/log/nginx/access.log  main;</span><br><br>[root<span class="hljs-meta">@nginx</span> ~]<span class="hljs-comment"># systemctl enable --now nginx.service</span><br>[root<span class="hljs-meta">@nginx</span> ~]<span class="hljs-comment"># tail -f /var/log/nginx/access_json.log</span><br>&#123;<span class="hljs-string">&quot;@timestamp&quot;</span>:<span class="hljs-string">&quot;2023-09-20T09:26:06+08:00&quot;</span>,<span class="hljs-string">&quot;host&quot;</span>:<span class="hljs-string">&quot;10.0.0.138&quot;</span>,<span class="hljs-string">&quot;clientip&quot;</span>:<span class="hljs-string">&quot;10.0.0.1&quot;</span>,<span class="hljs-string">&quot;size&quot;</span>:<span class="hljs-number">3429</span>,<span class="hljs-string">&quot;responsetime&quot;</span>:<span class="hljs-number">0.000</span>,<span class="hljs-string">&quot;upstreamtime&quot;</span>:<span class="hljs-string">&quot;-&quot;</span>,<span class="hljs-string">&quot;upstreamhost&quot;</span>:<span class="hljs-string">&quot;-&quot;</span>,<span class="hljs-string">&quot;http_host&quot;</span>:<span class="hljs-string">&quot;10.0.0.138&quot;</span>,<span class="hljs-string">&quot;uri&quot;</span>:<span class="hljs-string">&quot;/index.html&quot;</span>,<span class="hljs-string">&quot;domain&quot;</span>:<span class="hljs-string">&quot;10.0.0.138&quot;</span>,<span class="hljs-string">&quot;xff&quot;</span>:<span class="hljs-string">&quot;-&quot;</span>,<span class="hljs-string">&quot;referer&quot;</span>:<span class="hljs-string">&quot;-&quot;</span>,<span class="hljs-string">&quot;tcp_xff&quot;</span>:<span class="hljs-string">&quot;&quot;</span>,<span class="hljs-string">&quot;http_user_agent&quot;</span>:<span class="hljs-string">&quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36&quot;</span>,<span class="hljs-string">&quot;status&quot;</span>:<span class="hljs-string">&quot;200&quot;</span>&#125;<br>&#123;<span class="hljs-string">&quot;@timestamp&quot;</span>:<span class="hljs-string">&quot;2023-09-20T09:26:06+08:00&quot;</span>,<span class="hljs-string">&quot;host&quot;</span>:<span class="hljs-string">&quot;10.0.0.138&quot;</span>,<span class="hljs-string">&quot;clientip&quot;</span>:<span class="hljs-string">&quot;10.0.0.1&quot;</span>,<span class="hljs-string">&quot;size&quot;</span>:<span class="hljs-number">368</span>,<span class="hljs-string">&quot;responsetime&quot;</span>:<span class="hljs-number">0.000</span>,<span class="hljs-string">&quot;upstreamtime&quot;</span>:<span class="hljs-string">&quot;-&quot;</span>,<span class="hljs-string">&quot;upstreamhost&quot;</span>:<span class="hljs-string">&quot;-&quot;</span>,<span class="hljs-string">&quot;http_host&quot;</span>:<span class="hljs-string">&quot;10.0.0.138&quot;</span>,<span class="hljs-string">&quot;uri&quot;</span>:<span class="hljs-string">&quot;/nginx-logo.png&quot;</span>,<span class="hljs-string">&quot;domain&quot;</span>:<span class="hljs-string">&quot;10.0.0.138&quot;</span>,<span class="hljs-string">&quot;xff&quot;</span>:<span class="hljs-string">&quot;-&quot;</span>,<span class="hljs-string">&quot;referer&quot;</span>:<span class="hljs-string">&quot;http://10.0.0.138/&quot;</span>,<span class="hljs-string">&quot;tcp_xff&quot;</span>:<span class="hljs-string">&quot;&quot;</span>,<span class="hljs-string">&quot;http_user_agent&quot;</span>:<span class="hljs-string">&quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36&quot;</span>,<span class="hljs-string">&quot;status&quot;</span>:<span class="hljs-string">&quot;200&quot;</span>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="1-3-安装redis-10-0-0-135"><a href="#1-3-安装redis-10-0-0-135" class="headerlink" title="1.3 安装redis-10.0.0.135"></a>1.3 安装redis-10.0.0.135</h4><figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs perl">[root@redis ~]<span class="hljs-comment"># yum -y install redis</span><br>[root@redis ~]<span class="hljs-comment">#vim /etc/redis.conf #修改配置文件</span><br><span class="hljs-keyword">bind</span> <span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span> <span class="hljs-comment">#修改监听地址</span><br>requirepass <span class="hljs-number">123456</span> <span class="hljs-comment">#设置密码</span><br>[root@redis ~]<span class="hljs-comment"># systemctl enable --now redis #启动服务，并设置开机启动</span><br></code></pre></td></tr></table></figure>
+
+<h4 id="1-4-安装filebeat-10-0-0-138文件日志收集上传工具"><a href="#1-4-安装filebeat-10-0-0-138文件日志收集上传工具" class="headerlink" title="1.4 安装filebeat-10.0.0.138文件日志收集上传工具"></a>1.4 安装filebeat-10.0.0.138文件日志收集上传工具</h4><figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs dts">[root@nginx ~]<span class="hljs-meta"># yum -y install filebeat-7.17.11-x86_64.rpm</span><br>[root@nginx ~]<span class="hljs-meta"># cat /etc/filebeat/filebeat.yml #修改配置文件将log发送到redis中</span><br><span class="hljs-meta"># 配置 Filebeat 输入，监听日志文件</span><br>filebeat.inputs:<br>- type: log<br><span class="hljs-symbol">  enabled:</span> true<br><span class="hljs-symbol">  paths:</span><br>    - <span class="hljs-keyword">/var/</span>log<span class="hljs-keyword">/nginx/</span>access_json.log  <span class="hljs-meta"># Nginx 访问日志路径</span><br>  json.keys_under_root: true  <span class="hljs-meta"># 将 JSON 数据的字段放在根级别</span><br>  json.overwrite_keys: true  <span class="hljs-meta"># 如果字段冲突，覆盖已存在的字段</span><br><span class="hljs-symbol">  tags:</span> [<span class="hljs-string">&quot;nginx-access&quot;</span>]  <span class="hljs-meta"># 添加标签以区分不同类型的日志</span><br><br>- type: log<br><span class="hljs-symbol">  enabled:</span> true  <span class="hljs-meta"># 启用日志收集</span><br><span class="hljs-symbol">  paths:</span><br>    - <span class="hljs-keyword">/var/</span>log<span class="hljs-keyword">/nginx/</span>error.log  <span class="hljs-meta"># Nginx 错误日志路径</span><br><span class="hljs-symbol">  tags:</span> [<span class="hljs-string">&quot;nginx-error&quot;</span>]  <span class="hljs-meta"># 添加标签以区分不同类型的日志</span><br><br>- type: log<br><span class="hljs-symbol">  enabled:</span> true  <span class="hljs-meta"># 启用日志收集</span><br><span class="hljs-symbol">  paths:</span><br>    - <span class="hljs-keyword">/var/</span>log/messages  <span class="hljs-meta"># 系统日志路径</span><br><span class="hljs-symbol">  tags:</span> [<span class="hljs-string">&quot;syslog&quot;</span>]  <span class="hljs-meta"># 添加标签以区分不同类型的日志</span><br><br><span class="hljs-meta"># 配置 Filebeat 输出到 Redis</span><br>output.redis:<br><span class="hljs-symbol">  hosts:</span> [<span class="hljs-string">&quot;10.0.0.135:6379&quot;</span>]  <span class="hljs-meta"># Redis 主机地址和端口</span><br><span class="hljs-symbol">  password:</span> <span class="hljs-string">&quot;123456&quot;</span>  <span class="hljs-meta"># Redis 访问密码</span><br><span class="hljs-symbol">  db:</span> <span class="hljs-string">&quot;0&quot;</span>  <span class="hljs-meta"># Redis 数据库编号</span><br><span class="hljs-symbol">  key:</span> <span class="hljs-string">&quot;filebeat&quot;</span>  <span class="hljs-meta"># Redis 键名，用于存储日志数据</span><br>  <br>[root@nginx ~]<span class="hljs-meta"># systemctl enable --now filebeat.service #启动服务</span><br></code></pre></td></tr></table></figure>
+
+<h4 id="1-5-安装logstash"><a href="#1-5-安装logstash" class="headerlink" title="1.5 安装logstash"></a>1.5 安装logstash</h4><p>Logstash 是免费且开放的服务器端数据处理管道，能够从多个来源采集数据，转换数据，然后将数据发<br>送到您最喜欢的“存储库”中<br>Logstash 可以水平伸缩，而且logstash是整个ELK中拥有最多插件的一个组件<br>Losgtash 基于 Ruby 语言开发</p>
+<p>Logstash 主要功能：<br>输入 Input：用于日志收集,常见插件: Stdin、File、Kafka、Redis、Filebeat、Http<br>过滤 Filter：日志过滤和转换,常用插件: grok、date、geoip、mutate、useragent<br>输出 Output：将过滤转换过的日志输出, 常见插件: File,Stdout,Elasticsearch,MySQL,Redis,Kafka</p>
+<figure class="highlight puppet"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><code class="hljs puppet">[root@logstash ~]<span class="hljs-comment"># yum -y install java-1.8.0-openjd</span><br>[root@logstash ~]<span class="hljs-comment"># yum -y install logstash-7.17.11-x86_64.rpm</span><br>[root@logstash ~]<span class="hljs-comment"># vim /etc/logstash/logstash.yml</span><br>[root@logstash ~]<span class="hljs-comment"># grep -Ev &#x27;#|^$&#x27; /etc/logstash/logstash.yml</span><br>node.name: logstash-node01<br>pipeline.workers: 2<br>pipeline.batch.size: 1000 <span class="hljs-comment">#批量写入的消息个数，可以根据ES的性能做性能优化</span><br>pipeline.batch.delay: 5 <span class="hljs-comment">#批量写入的延时，可以根据ES的性能做性能优化</span><br>path.data: /var/lib/logstash <span class="hljs-comment">#默认值</span><br>path.logs: /var/log/logstash <span class="hljs-comment">#默认值</span><br><span class="hljs-comment">#内存优化</span><br>[root@logstash ~] <span class="hljs-comment">#vim /etc/logstash/jvm.options</span><br>-Xms1g<br>-Xmx1g<br><span class="hljs-comment">#Logstash默认以logstash用户运行,如果logstash需要收集本机的日志,可能会有权限问题,可以修改为</span><br>root<br>[root@logstash ~] <span class="hljs-comment">#vim /etc/systemd/system/logstash.service</span><br>[Service]<br>User=root<br>Group=root<br><br>[root@logstash ~]<span class="hljs-comment"># cat /etc/logstash/conf.d/redis-to-es.conf #创建logstash配置文件从redis中取出日志并发送到elasticsearch中</span><br><span class="hljs-keyword">input</span> &#123;<br>  redis &#123;<br>    <span class="hljs-attr">host</span> =&gt; <span class="hljs-string">&quot;10.0.0.135&quot;</span><br>    <span class="hljs-attr">port</span> =&gt; <span class="hljs-string">&quot;6379&quot;</span><br>    <span class="hljs-attr">password</span> =&gt; <span class="hljs-string">&quot;123456&quot;</span><br>    <span class="hljs-attr">db</span> =&gt; <span class="hljs-string">&quot;0&quot;</span><br>    <span class="hljs-attr">key</span> =&gt; <span class="hljs-string">&quot;filebeat&quot;</span><br>    <span class="hljs-attr">data_type</span> =&gt; <span class="hljs-string">&quot;list&quot;</span><br>  &#125;<br>&#125;<br><span class="hljs-keyword">output</span> &#123;<br>  <span class="hljs-keyword">if</span> <span class="hljs-string">&quot;syslog&quot;</span> <span class="hljs-keyword">in</span> [tags] &#123; <br>    elasticsearch &#123;<br>    <span class="hljs-attr">hosts</span> =&gt; [<span class="hljs-string">&quot;10.0.0.133:9200&quot;</span>,<span class="hljs-string">&quot;10.0.0.134:9200&quot;</span>,<span class="hljs-string">&quot;10.0.0.136:9200&quot;</span>]<br>    <span class="hljs-attr">index</span> =&gt; <span class="hljs-string">&quot;syslog-%&#123;+YYYY.MM.dd&#125;&quot;</span><br>    &#125;  <br>  &#125;<br>  if <span class="hljs-string">&quot;nginx-access&quot;</span> in [tags] &#123;<br>    <span class="hljs-keyword">elasticsearch</span> &#123;<br>      <span class="hljs-attr">hosts</span> =&gt; [<span class="hljs-string">&quot;10.0.0.133:9200&quot;</span>,<span class="hljs-string">&quot;10.0.0.134:9200&quot;</span>,<span class="hljs-string">&quot;10.0.0.136:9200&quot;</span>]<br>      <span class="hljs-attr">index</span> =&gt; <span class="hljs-string">&quot;nginx-accesslog-%&#123;+YYYY.MM.dd&#125;&quot;</span><br>      <span class="hljs-attr">template_overwrite</span> =&gt; <span class="hljs-keyword">true</span><br>    &#125;<br>  &#125;  <br>  if <span class="hljs-string">&quot;nginx-error&quot;</span> in [tags] &#123;<br>    <span class="hljs-keyword">elasticsearch</span> &#123;<br>      <span class="hljs-attr">hosts</span> =&gt; [<span class="hljs-string">&quot;10.0.0.133:9200&quot;</span>,<span class="hljs-string">&quot;10.0.0.134:9200&quot;</span>,<span class="hljs-string">&quot;10.0.0.136:9200&quot;</span>]<br>      <span class="hljs-attr">index</span> =&gt; <span class="hljs-string">&quot;nginx-errorlog-%&#123;+YYYY.MM.dd&#125;&quot;</span><br>      <span class="hljs-attr">template_overwrite</span> =&gt; <span class="hljs-keyword">true</span><br>    &#125;<br>  &#125;<br>&#125;<br><br>[root@logstash ~] <span class="hljs-comment">#systemctl daemon-reload;systemctl restart logstash</span><br></code></pre></td></tr></table></figure>
+
+<h4 id="1-6-安装kibana"><a href="#1-6-安装kibana" class="headerlink" title="1.6 安装kibana"></a>1.6 安装kibana</h4><p>Kibana 是一款开源的数据分析和可视化平台，它是 Elastic Stack 成员之一，设计用于和 Elasticsearch<br>协作,可以使用 Kibana 对 Elasticsearch 索引中的数据进行搜索、查看、交互操作,您可以很方便的利用<br>图表、表格及地图对数据进行多元化的分析和呈现。<br>Kibana 可以使大数据通俗易懂。它很简单，基于浏览器的界面便于您快速创建和分享动态数据仪表板来<br>追踪 Elasticsearch 的实时数据变化。<br>Kibana 基于 TypeScript 语言开发</p>
+<figure class="highlight autoit"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs autoit">[root<span class="hljs-symbol">@kibana</span> ~]<span class="hljs-meta"># yum install -y kibana-7.17.11-x86_64.rpm</span><br><br>[root<span class="hljs-symbol">@kibana</span> ~]<span class="hljs-meta"># vim /etc/kibana/kibana.yml</span><br>[root<span class="hljs-symbol">@kibana</span> ~]<span class="hljs-meta"># grep <span class="hljs-string">&quot;^[a-Z]&quot;</span> /etc/kibana/kibana.yml</span><br>server.port: <span class="hljs-number">5601</span> <span class="hljs-meta">#监听端口,此为默认值</span><br>server.host: <span class="hljs-string">&quot;0.0.0.0&quot;</span> <span class="hljs-meta">#修改此行的监听地址,默认为localhost</span><br>elasticsearch.hosts: <br>[<span class="hljs-string">&quot;http://10.0.0.133:9200&quot;</span>,<span class="hljs-string">&quot;http://10.0.0.134:9200&quot;</span>,<span class="hljs-string">&quot;http://10.0.0.136:9200&quot;</span>] <span class="hljs-meta">#修改此行,指向ES服务器地址,默认为localhost</span><br>i18n.locale: <span class="hljs-string">&quot;zh-CN&quot;</span> <span class="hljs-meta">#修改此行,使用<span class="hljs-string">&quot;zh-CN&quot;</span>显示中文界面,默认英文</span><br><br>[root<span class="hljs-symbol">@kibana</span> ~]<span class="hljs-meta"># systemctl enable --now kibana</span><br></code></pre></td></tr></table></figure>
+
+<p>访问页面<a href="http://10.0.0.137:5601添加索引">http://10.0.0.137:5601添加索引</a></p>
+<p><img src="image-20230922135725563.png" srcset="/img/loading.gif" lazyload alt="image-20230922135725563"></p>
+<p>创建3个日志的索引模式</p>
+<p><img src="image-20230922135834129.png" srcset="/img/loading.gif" lazyload alt="image-20230922135834129"></p>
+<p><img src="image-20230922135940942.png" srcset="/img/loading.gif" lazyload alt="image-20230922135940942"></p>
+<p><img src="image-20230922140015626.png" srcset="/img/loading.gif" lazyload alt="image-20230922140015626"></p>
+<p>查看日志索引</p>
+<p><img src="image-20230922140033276.png" srcset="/img/loading.gif" lazyload alt="image-20230922140033276"></p>
+<p>日志已经可以查看到</p>
+<p><img src="image-20230922140101705-1695777765245.png" srcset="/img/loading.gif" lazyload alt="image-20230922140101705"></p>
+<h2 id="2、分别部署RabbitMQ单机版及RabbitMQ集群。"><a href="#2、分别部署RabbitMQ单机版及RabbitMQ集群。" class="headerlink" title="2、分别部署RabbitMQ单机版及RabbitMQ集群。"></a>2、分别部署RabbitMQ单机版及RabbitMQ集群。</h2><h4 id="2-1-什么是MQ"><a href="#2-1-什么是MQ" class="headerlink" title="2.1. 什么是MQ ?"></a>2.1. 什么是MQ ?</h4><p>1、MQ的概念</p>
+<p><strong>MQ</strong> 全称Message Queue（消息队列），是在消息的传输过程中保存消息的容器。多用于系统之间的<strong>异步通信</strong>。 下面用图来理解异步通信，并阐明与同步通信的区别。</p>
+<blockquote>
+<p>同步通信：甲乙两人面对面交流，你一句我一句必须同步进行，两人除此之外不做任何事情</p>
+</blockquote>
+<p><img src="v2-cde10814405a7d379a3636c8ee7e2eaa_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>同步通信</p>
+<blockquote>
+<p>异步通信：异步通信相当于通过第三方转述对话，可能有消息的延迟，但不需要二人时刻保持联系，消息传给第三方后，两人可以做其他自己想做的事情，当需要获取对方说话的内容时，直接从消息队列里获取即可。</p>
+</blockquote>
+<p><img src="v2-bdea99a7bc091ccdeb018166814918d8_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>异步通信</p>
+<p>2、理解消息队列</p>
+<p><strong>消息</strong> 就是两台计算机间传送的数据单位；本质上就是一段数据，它能被一个或者多个应用程序所理解，是应用程序之间传递的信息载体。消息可以非常简单，例如只包含文本字符串；也可以更复杂地嵌入对象。</p>
+<p><strong>队列</strong> 是数据结构中概念。在队列中，数据先进先出，后进后出，犹如排队做核酸。</p>
+<p><strong>消息队列</strong> MQ是把消息和队列结合起来，称之为消息队列（Message Queue）。把要传输的数据（消息）与队列进行绑定，用队列先进先出机制来实现消息传递。消息队列由 <strong>生产者</strong> 和 <strong>消费者</strong> 两部分构成；生产者主要负责产生消息并把消息放入队列中，再由消费者去处理。消费者可以到指定队列中获取消息，或者订阅相应的队列，最后由MQ服务端进行消息推送。</p>
+<p><strong>什么是订阅？</strong>订阅就是为消费者服务的，消费者提前订阅，当消息队列中有消息产出时，自动去获取消息进行消费。生活中有很多这种例子，比如购买腾讯、优酷等视频会员时就会有订阅模式，当你的会员到期时，会自动帮你完成续费。</p>
+<p><img src="v2-cbdb1694c4df97d2b7dba4df7f036f45_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><strong>二、MQ的优势和劣势</strong></p>
+<p>*<strong>1、优势和作用*</strong></p>
+<p><strong>应用解耦</strong> 例如在我们非常熟悉电商系统平台中，用户下订单需要调用订单系统，订单系统需要调用库存系统、支付系统、物流系统等进行数据交互来完成整个下单业务，这种把整个业务都耦合在一起。很容易出现我们经常遇见的问题：</p>
+<p>①、当中间某个环节库存系统或支付系统出现异常或故障，会造成整个订单系统崩溃无法完成订单业务；</p>
+<p>②、当我们需求开发时，可能会新增一个其他系统的业务与当前的订单系统关联并进行数据交互，此时就必须修改订单系统的代码。如果系统壮大，业务越来越多，越来越复杂时，随之带来的维护成本也会成指数增加。</p>
+<p><img src="v2-a4df5f36af1844ebfda3f00973873d8d_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>支付系统异常业务不可达</p>
+<p>由此我们不难看出 <strong>系统耦合性越高，容错性和可维护性就会越低。</strong>如果在系统中引入MQ，即订单系统将消息先发送到MQ中，MQ再将数据消息转发到其他系统，问题就可以得到解决，MQ天生就是来干这个事的。那么当我们加入MQ以后整个系统会发生什么变化？</p>
+<p>①、由于订单系统只发消息给MQ，不直接对接其他系统，如果其他任何一个系统出现异常或故障时，不影响整个订单业务的执行。当异常或故障解决以后，程序自动从MQ获取数据信息完成后续相关业务逻辑即可。</p>
+<p>②、如果需求修改，新增了一个业务系统，此时无需修改其他系统的代码，只需修改MQ将消息发送给新增的系统即可，实现数据信息的可靠有效传递。<strong>使用MQ让系统应用间进行解耦，提升整个系统的容错性和可维护性</strong></p>
+<p><img src="v2-d9f92fa34ebdb195a32c3d36e101739e_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>使用MQ，其他业务异常/故障，不影响业务的执行</p>
+<p><strong>异步提速</strong> 开发一款App系统，其登录注册是最为常见的需求，例如注册的业务有手机注册入库、绑定邮箱验证、手机短信验证。</p>
+<p><img src="v2-730368e449c84677973c40341c0dbdf7_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>没有使用MQ前</p>
+<p>用户的注册操作需要等待350ms才能得到响应，如果邮件验证系统/手机短信通知系统耗时比较长，那么用户的响应随之就会变长，非常影响客户的体验度，而当使用了MQ后，客户的体验度飙升。</p>
+<p><img src="v2-664494c752cbab6a346b4220591175ec_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>使用MQ后</p>
+<p><strong>削峰填谷</strong> 假设系统承载的QPS是1000，如果流量顶峰时达到50000，则会造成系统压垮崩溃。使用了MQ之后，限制消费消息的速度为1000，把数据产生的压力放在MQ中，系统的高峰就会被削掉，这个过程叫 <strong>削峰</strong>，因为消息积压的数据比较多，在高峰期过后的一段时间内，消费消息的速度还会继续维持在这个速度，直到把积压的消息消费完，这个过程叫 <strong>填谷</strong>。这样可以大大提高系统的稳定性和用户体验。</p>
+<p>*<strong>2、劣势*</strong></p>
+<ul>
+<li>系统可用性降低： 系统引入的外部依赖越多，系统稳定性越差。一旦MQ宕机，就会对业务造成影响。</li>
+<li>系统复杂度提高： MQ的加入大大增加了系统的复杂度，以前系统间是同步的远程调用，现在是通过MQ进行异步调用。</li>
+<li>一致性问题 ： A系统处理完业务，通过MQ给B、C、D三个系统发消息数据，如果B系统、C系统处理成功，D系统处理失败，则会造成数据处理的不一致。</li>
+</ul>
+<p><strong>三、MQ的应用场景</strong></p>
+<p>1、高峰流量：抢红包、秒杀活动、抢火车票等这些业务场景都是短时间内需要处理大量请求，如果直接连接系统处理业务，会耗费大量资源，有可能造成系统瘫痪。 而使用MQ后，可以先让用户将请求发送到MQ中，MQ会先保存请求消息，不会占用系统资源，且MQ会进行消息排序，先请求的秒杀成功，后请求的秒杀失败。</p>
+<p><img src="v2-8a639580f29d26d89f29c422031a5318_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>抢红包</p>
+<p>2、消息分发：如电商网站要推送促销信息，该业务耗费时间较多，但对时效性要求不高，可以使用MQ做消息分发。</p>
+<p><img src="v2-49054c84203cb103156156b5a0b5f70d_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>促销</p>
+<p>3、数据同步：假如我们需要将数据保存到数据库之外，还需要一段时间将数据同步到缓存（如Redis）、搜索引擎（如Elasticsearch）中。此时可以将数据库的数据作为消息发送到MQ中，并同步到缓存、 搜索引擎中。</p>
+<p><img src="v2-01fb0811129277e0dba0021abe2fde0e_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>同步</p>
+<p>4、异步处理：在电商系统中，订单完成后，需要及时的通知子系统（进销存系统发货，用户服务积分，发送短信）进行下一步操作。为了保证订单系统的高性能，应该直接返回订单结果，之后让MQ通知子系统做其他非实时的业务操作。这样能保证核心业务的高效及时</p>
+<p><img src="v2-2847087a1ca9b395330b40596744bfc6_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>消息通知</p>
+<p>5、离线处理：在银行系统中，如果要查询近十年的历史账单，这是非常耗时的操作。如果发送同步请求，则会花费大量时间等待响应。此时使用MQ发送异步请求，等到查询出结果后获取结果即可。</p>
+<p><img src="v2-2fffb9a20f65b722d63f8f2c9639962e_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p><strong>四、AMQP</strong></p>
+<p>1、什么是 AMQP ： 即Advanced Message Queuing Protocol(高级消息队列协议)，是一个<strong>网络协议</strong>，专门为消息中间件设计。基于此协议的客户端与消息中间件可传递消息，并不受不同中间件产品，不同开发语言等条件的限制。2006年AMQP规范发布，类比HTTP。</p>
+<p>2、AMQP工作过程： 生产者(Publisher)将消息发布到交换机(Exchange)，交换机根据规则将消息分发给交换机绑定的队列(Queue)，队列再将消息投递给订阅了此队列的消费者</p>
+<p><img src="v2-0872710215c7a8536241834f06af65ba_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>AMQP</p>
+<p><strong>五、工作原理</strong></p>
+<p><img src="v2-62dd7d82b4ec1c2acfbdefc57fad4e4b_720w.webp" srcset="/img/loading.gif" lazyload alt="img"></p>
+<p>工作原理</p>
+<ul>
+<li>Producer【<strong>消息的生产者】</strong> 一个向交换机发布消息的客户端应用程序。</li>
+<li>Connection<strong>【连接】</strong> 生产者/消费者和RabbitMQ服务器之间建立的TCP连接。</li>
+<li>Channel【<strong>信道】</strong> 是TCP里面的虚拟连接。例如：Connection相当于电缆，Channel相当于独立光纤束，一条TCP连接中可以创建多条信道，增加连接效率。无论是发布消息、接收消息、订阅队列都是通过信道完成的。</li>
+<li>Broker 消息队列服务器实体。即RabbitMQ服务器</li>
+<li>Virtual Host【<strong>虚拟主机】</strong> 出于多租户和安全因素设计的，把AMQP的基本组件划分到一个虚拟的分组中。每个vhost本质上就是一个mini版的RabbitMQ服务器，拥有自己的队列、交换机、绑定和权限机制。当多个不同的用户使用同一个RabbitMQ服务器时，可以划分出多个虚拟主机。RabbitMQ默认的虚拟主机路径是 /</li>
+<li>Exchange<strong>【交换机】</strong> 用来接收生产者发送的消息，并根据分发规则，将这些消息分发给服务器中的队列中。不同的交换机有不同的分发规则。</li>
+<li>Queue【<strong>消息队列】</strong> 用来保存消息直到发送给消费者。它是消息的容器，也是消息的终点。消息一直在队列里面，等待消费者链接到这个 队列将其取走。</li>
+<li>Binding<strong>【绑定】</strong> 消息队列和交换机之间的虚拟连接，绑定中包含路由规则，绑定信息保存到交换机的路由表中，作为消息的分发依据。</li>
+<li>Consumer【<strong>消息的消费者】</strong> 表示一个从消息队列中取得消息的客户端应用程序。 ….RabbitMQ的概念到此结束。 ….以上知识库转自知乎@逻辑-分享是学习的源泉，交流是进步的阶梯。</li>
+</ul>
+<h4 id="2-2-MQ部署单机版。"><a href="#2-2-MQ部署单机版。" class="headerlink" title="2.2 MQ部署单机版。"></a>2.2 MQ部署单机版。</h4><h5 id="Rocky8-5安装rabbitmq"><a href="#Rocky8-5安装rabbitmq" class="headerlink" title="Rocky8.5安装rabbitmq"></a>Rocky8.5安装rabbitmq</h5><p>下载rpm包安装</p>
+<p>下载地址：</p>
+<p>rabbitmq <a target="_blank" rel="noopener" href="https://www.rabbitmq.com/install-rpm.html#downloads">https://www.rabbitmq.com/install-rpm.html#downloads</a></p>
+<p>erlang(运行rabbitmq运行需要安装此依赖)<a target="_blank" rel="noopener" href="https://github.com/rabbitmq/erlang-rpm/">https://github.com/rabbitmq/erlang-rpm/</a></p>
+<figure class="highlight elixir"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs elixir">[root<span class="hljs-variable">@mq</span>-server1 ~]<span class="hljs-comment"># cat /etc/hosts #添加host解析</span><br><span class="hljs-number">127.0</span>.<span class="hljs-number">0.1</span>   localhost localhost.localdomain localhost4 localhost4.localdomain4<br>::<span class="hljs-number">1</span>         localhost localhost.localdomain localhost6 localhost6.localdomain6<br><br><span class="hljs-number">10.0</span>.<span class="hljs-number">0.136</span> mq-server1 mq-server1.xinqi.org <span class="hljs-comment">#添加136解析</span><br>[root<span class="hljs-variable">@mq</span>-server1 ~]<span class="hljs-comment"># yum -y install erlang-26.1-1.el8.x86_64.rpm  rabbitmq-server-3.12.6-1.el8.noarch.rpm</span><br>rabbitmq-plugins enable rabbitmq_management <span class="hljs-comment">#安装完上面的2个rpm包后，需要手动开启管理页面15672端口</span><br>[root<span class="hljs-variable">@mq</span>-server1 ~]<span class="hljs-comment"># systemctl enable --now rabbitmq-server.service #启动服务</span><br>[root<span class="hljs-variable">@mq</span>-server1 ~]<span class="hljs-comment"># rabbitmqctl add_user admin admin #创建用户</span><br>[root<span class="hljs-variable">@mq</span>-server1 ~]<span class="hljs-comment"># rabbitmqctl set_user_tags admin administrator #添加管理员权限</span><br></code></pre></td></tr></table></figure>
+
+<p>访问页面</p>
+<p><img src="image-20230927093457485.png" srcset="/img/loading.gif" lazyload alt="image-20230927093457485"></p>
+<p><img src="image-20230927093754568.png" srcset="/img/loading.gif" lazyload alt="image-20230927093754568"></p>
+<p>2.3 MQ集群部署3个节点。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><code class="hljs ruby">cat /etc/hosts <span class="hljs-comment">#准备3台host,分别在3台host上添加解析</span><br><span class="hljs-number">10.0</span>.<span class="hljs-number">0.133</span> mq-server1 mq-server1.xinqi.org<br><span class="hljs-number">10.0</span>.<span class="hljs-number">0.134</span> mq-server2 mq-server2.xinqi.org<br><span class="hljs-number">10.0</span>.<span class="hljs-number">0.136</span> mq-server3 mq-server3.xinqi.org<br><br><span class="hljs-number">3</span>台.erlang.cookie需要相同<br>scp /var/lib/rabbitmq/.erlang.cookie <span class="hljs-number">10.0</span>.<span class="hljs-number">0.134</span><span class="hljs-symbol">:/var/lib/rabbitmq/</span>.erlang.cookie<br>scp /var/lib/rabbitmq/.erlang.cookie <span class="hljs-number">10.0</span>.<span class="hljs-number">0.136</span><span class="hljs-symbol">:/var/lib/rabbitmq/</span>.erlang.cookie<br><br>在 mq-server1 作为内存节点添加到 mq-server3，并作为内存节点，在 mq-server1执行以下命令：<br>root<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server1:</span>~<span class="hljs-comment"># rabbitmqctl stop_app #停止 app 服务</span><br>root<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server1:</span>~<span class="hljs-comment"># rabbitmqctl reset #清空元数据</span><br>Resetting node rabbit<span class="hljs-variable">@mq</span>-server1 <br>＃将 rabbitmq-server1 添加到集群当中，并成为内存节点，不加--ram 默认是磁盘<br>节点<br>root<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server1:</span>~<span class="hljs-comment"># rabbitmqctl join_cluster rabbit<span class="hljs-doctag">@mq</span>-server3 --ram</span><br>Clustering node rabbit<span class="hljs-variable">@mq</span>-server1 with rabbit<span class="hljs-variable">@mq</span>-server3<br>root<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server1:</span>~<span class="hljs-comment"># rabbitmqctl start_app #启动 app 服务</span><br>Starting node rabbit<span class="hljs-variable">@mq</span>-server1 ...<br><br>在 mq-server2 作为内存节点添加到 mq-server3，并作为内存节点，在 mq-server2<br>执行以下命令：<br>root<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server2:</span>~<span class="hljs-comment"># rabbitmqctl stop_app</span><br>Stopping rabbit application on node rabbit<span class="hljs-variable">@mq</span>-server2 ...<br>root<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server2:</span>~<span class="hljs-comment"># rabbitmqctl reset</span><br>Resetting node rabbit<span class="hljs-variable">@mq</span>-server2 ...<br>root<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server2:</span>~<span class="hljs-comment"># rabbitmqctl join_cluster rabbit<span class="hljs-doctag">@mq</span>-server3 --ram</span><br>Clustering node rabbit<span class="hljs-variable">@mq</span>-server2 with rabbit<span class="hljs-variable">@mq</span>-server3<br>root<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server2:</span>~<span class="hljs-comment"># rabbitmqctl start_app</span><br>Starting node rabbit<span class="hljs-variable">@mq</span>-server2 ...<br><br>[root<span class="hljs-variable">@mq</span>-server3 ~]<span class="hljs-comment"># rabbitmqctl cluster_status 查看集群状态</span><br>Cluster status of node rabbit<span class="hljs-variable">@mq</span>-server3 ...<br>Basics<br><br>Cluster <span class="hljs-symbol">name:</span> rabbit<span class="hljs-variable">@mq</span>-server3<br>Total <span class="hljs-variable constant_">CPU</span> cores available cluster-<span class="hljs-symbol">wide:</span> <span class="hljs-number">6</span><br><br>Disk Nodes<br><br>rabbit<span class="hljs-variable">@mq</span>-server3<br><br><span class="hljs-variable constant_">RAM</span> Nodes<br><br>rabbit<span class="hljs-variable">@mq</span>-server1<br>rabbit<span class="hljs-variable">@mq</span>-server2<br><br>Running Nodes<br><br>rabbit<span class="hljs-variable">@mq</span>-server1<br>rabbit<span class="hljs-variable">@mq</span>-server2<br>rabbit<span class="hljs-variable">@mq</span>-server3<br><br>Versions<br><br>rabbit<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server3:</span> RabbitMQ <span class="hljs-number">3.12</span>.<span class="hljs-number">6</span> on Erlang <span class="hljs-number">26.1</span><br>rabbit<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server2:</span> RabbitMQ <span class="hljs-number">3.12</span>.<span class="hljs-number">6</span> on Erlang <span class="hljs-number">26.1</span><br>rabbit<span class="hljs-variable">@mq</span>-<span class="hljs-symbol">server1:</span> RabbitMQ <span class="hljs-number">3.12</span>.<span class="hljs-number">6</span> on Erlang <span class="hljs-number">26.1</span><br><br><span class="hljs-variable constant_">CPU</span> Cores<br><br><span class="hljs-symbol">Node:</span> rabbit<span class="hljs-variable">@mq</span>-server3, available <span class="hljs-variable constant_">CPU</span> <span class="hljs-symbol">cores:</span> <span class="hljs-number">2</span><br><span class="hljs-symbol">Node:</span> rabbit<span class="hljs-variable">@mq</span>-server2, available <span class="hljs-variable constant_">CPU</span> <span class="hljs-symbol">cores:</span> <span class="hljs-number">2</span><br><span class="hljs-symbol">Node:</span> rabbit<span class="hljs-variable">@mq</span>-server1, available <span class="hljs-variable constant_">CPU</span> <span class="hljs-symbol">cores:</span> <span class="hljs-number">2</span><br><br>Maintenance status<br><br><span class="hljs-symbol">Node:</span> rabbit<span class="hljs-variable">@mq</span>-server3, <span class="hljs-symbol">status:</span> <span class="hljs-keyword">not</span> under maintenance<br><span class="hljs-symbol">Node:</span> rabbit<span class="hljs-variable">@mq</span>-server2, <span class="hljs-symbol">status:</span> <span class="hljs-keyword">not</span> under maintenance<br><span class="hljs-symbol">Node:</span> rabbit<span class="hljs-variable">@mq</span>-server1, <span class="hljs-symbol">status:</span> <span class="hljs-keyword">not</span> under maintenance<br></code></pre></td></tr></table></figure>
+
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/09/14/%E4%BD%BF%E7%94%A8keepalived%E5%81%9Anginx%E9%AB%98%E5%8F%AF%E7%94%A8-redis3%E8%8A%82%E7%82%B9%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2/">
+                        <span class="hidden-mobile">使用keepalived做nginx高可用,redis3节点集群部署</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;TOC</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

@@ -1,0 +1,460 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1、在两台服务器上安装kvm虚拟化，把其中一台的虚拟机迁移到另一台。环境准备：rocky8.5 10.0.0.133（虚拟机设置CPU4核8G内存，开启CPU虚拟化） ​                   rocky8.5 10.0.0.134（虚拟机设置CPU4核8G内存，开启CPU虚拟化） ​                   win10 10.0.0.1(安装Xmanage)  1234">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker创建容器镜像">
+<meta property="og:url" content="http://example.com/2023/09/04/Docker%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F/index.html">
+<meta property="og:site_name" content="5-12 23:30">
+<meta property="og:description" content="1、在两台服务器上安装kvm虚拟化，把其中一台的虚拟机迁移到另一台。环境准备：rocky8.5 10.0.0.133（虚拟机设置CPU4核8G内存，开启CPU虚拟化） ​                   rocky8.5 10.0.0.134（虚拟机设置CPU4核8G内存，开启CPU虚拟化） ​                   win10 10.0.0.1(安装Xmanage)  1234">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2023/09/04/Docker%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F/image-20230830094551345.png">
+<meta property="og:image" content="http://example.com/2023/09/04/Docker%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F/image-20230830103047279.png">
+<meta property="og:image" content="http://example.com/2023/09/04/Docker%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F/image-20230830133048231.png">
+<meta property="og:image" content="http://example.com/2023/09/04/Docker%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F/image-20230830133918208.png">
+<meta property="og:image" content="http://example.com/2023/09/04/Docker%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F/image-20230830140250007.png">
+<meta property="article:published_time" content="2023-09-04T13:28:34.000Z">
+<meta property="article:modified_time" content="2023-09-04T13:30:48.070Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/2023/09/04/Docker%E5%88%9B%E5%BB%BA%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F/image-20230830094551345.png">
+  
+  
+  <title>Docker创建容器镜像 - 5-12 23:30</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.14","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                Home
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                Archives
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                Categories
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                Tags
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                About
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Docker创建容器镜像">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2023-09-04 13:28" pubdate>
+        September 4, 2023 pm
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      5k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      42 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Docker创建容器镜像</h1>
+            
+            <div class="markdown-body">
+              <h4 id="1、在两台服务器上安装kvm虚拟化，把其中一台的虚拟机迁移到另一台。"><a href="#1、在两台服务器上安装kvm虚拟化，把其中一台的虚拟机迁移到另一台。" class="headerlink" title="1、在两台服务器上安装kvm虚拟化，把其中一台的虚拟机迁移到另一台。"></a>1、在两台服务器上安装kvm虚拟化，把其中一台的虚拟机迁移到另一台。</h4><p>环境准备：rocky8.5 10.0.0.133（虚拟机设置CPU4核8G内存，开启CPU虚拟化）</p>
+<p>​                   rocky8.5 10.0.0.134（虚拟机设置CPU4核8G内存，开启CPU虚拟化）</p>
+<p>​                   win10 10.0.0.1(安装Xmanage)</p>
+<p><img src="image-20230830094551345.png" srcset="/img/loading.gif" lazyload alt="image-20230830094551345"></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><div class="code-wrapper"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></div></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#在133/134上分别安装kvm</span><br>[root@Rocky8 ~]<span class="hljs-comment"># yum -y install qemu-kvm libvirt virt-manager virt-install virt-viewer</span><br><span class="hljs-comment">#开启libvirtd服务并设置开机启动</span><br>[root@Rocky8 ~]<span class="hljs-comment"># systemctl enable --now libvirtd</span><br><span class="hljs-comment">#在133上运行命令，将kvm界面发送到win10上</span><br>[root@Rocky8 ~]<span class="hljs-comment"># export DISPLAY=10.0.0.1:0.0</span><br>[root@Rocky8 ~]<span class="hljs-comment"># virt-manager</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="image-20230830103047279.png" srcset="/img/loading.gif" lazyload alt="image-20230830103047279"></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs sh"><span class="hljs-comment">#新建文件夹</span><br><span class="hljs-built_in">mkdir</span> /kvm/&#123;iso,img&#125; -p<br><span class="hljs-comment">#新建20G的qcow2格式的虚拟机存储，不会占用真实存储空间，用来存储虚拟机。</span><br>qemu-img create -f qcow2 /kvm/img/vm2.qcow2 20G      <br> <br><span class="hljs-comment">#需提前将CentOS7.9镜像存放在/kvm/iso下</span><br><span class="hljs-built_in">mv</span> /kvm/iso/CentOS-7-x86_64-Minimal-2009.iso centos7.iso<br>————————————————<br><span class="hljs-comment">#运行命令部署centos7</span><br>[root@Rocky8 kvm]<span class="hljs-comment"># virt-install --virt-type kvm -n centos7-1 -r 1024 --vcpus 2 --cdrom=/kvm/iso/CentOS-7-x86_64-DVD-2009.iso --disk path=/kvm/img/vm2.qcow2 --network network=default  --graphics vnc,listen=0.0.0.0 --noautoconsole --os-variant=centos7.0</span><br></code></pre></td></tr></table></figure>
+
+<h5 id="手动配置centos7等待安装完成"><a href="#手动配置centos7等待安装完成" class="headerlink" title="手动配置centos7等待安装完成"></a>手动配置centos7等待安装完成</h5><p><img src="image-20230830133048231.png" srcset="/img/loading.gif" lazyload alt="image-20230830133048231"></p>
+<p>122.68</p>
+<h5 id="虚拟机安装完成"><a href="#虚拟机安装完成" class="headerlink" title="虚拟机安装完成"></a>虚拟机安装完成</h5><p><img src="image-20230830133918208.png" srcset="/img/loading.gif" lazyload alt="image-20230830133918208"></p>
+<h5 id="1-2-基于网络传输实现虚拟机迁移"><a href="#1-2-基于网络传输实现虚拟机迁移" class="headerlink" title="1.2 基于网络传输实现虚拟机迁移"></a>1.2 基于网络传输实现虚拟机迁移</h5><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs sh">[root@Rocky8 kvm]<span class="hljs-comment"># virsh list --all  #查看虚拟机状态</span><br> Id   Name        State<br>---------------------------<br> 2    centos7-1   running<br><br>[root@Rocky8 kvm]<span class="hljs-comment"># virsh shutdown centos7-1  #关闭虚拟机</span><br>Domain centos7-1 is being shutdown<br><br>[root@Rocky8 kvm]<span class="hljs-comment"># virsh list --all</span><br> Id   Name        State<br>----------------------------<br> -    centos7-1   shut off<br> <br>[root@Rocky8 kvm]<span class="hljs-comment"># virsh domblklist centos7-1 </span><br> Target   Source<br>------------------------------<br> vda      /kvm/img/vm2.qcow2<br> sda      -<br><span class="hljs-comment">#导出xml配置文件</span><br>[root@Rocky8 kvm]<span class="hljs-comment"># virsh dumpxml centos7-1 &gt; /kvm/centos7.xml</span><br><span class="hljs-comment">#复制配置文件和磁盘文件到10.0.0.134主机        </span><br>[root@Rocky8 kvm]<span class="hljs-comment"># scp /kvm/centos7.xml root@10.0.0.134:/kvm </span><br>[root@Rocky8 img]<span class="hljs-comment"># scp /kvm/img/* root@10.0.0.134:/kvm/img/</span><br><span class="hljs-comment">#根据配置文件生成虚拟机</span><br>[root@Rocky8 kvm]<span class="hljs-comment"># virsh define centos7.xml </span><br>Domain centos7-1 defined from centos7.xml<br><span class="hljs-comment">#打开虚拟机查看是否迁移成功</span><br>[root@Rocky8 kvm]<span class="hljs-comment"># export DISPLAY=10.0.0.1:0.0</span><br>[root@Rocky8 kvm]<span class="hljs-comment"># virt-manager</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="image-20230830140250007.png" srcset="/img/loading.gif" lazyload alt="image-20230830140250007"></p>
+<h4 id="2、手动制作一个容器镜像创建成容器并正常运行。"><a href="#2、手动制作一个容器镜像创建成容器并正常运行。" class="headerlink" title="2、手动制作一个容器镜像创建成容器并正常运行。"></a>2、手动制作一个容器镜像创建成容器并正常运行。</h4><h5 id="2-1-使用Dockerfile制作一个基于rockylinux8-5的nginx镜像"><a href="#2-1-使用Dockerfile制作一个基于rockylinux8-5的nginx镜像" class="headerlink" title="2.1 使用Dockerfile制作一个基于rockylinux8.5的nginx镜像"></a>2.1 使用Dockerfile制作一个基于rockylinux8.5的nginx镜像</h5><p>在Dockerfile目录下准备编译安装的相关文件</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><code class="hljs sh">[root@Rocky8 data]<span class="hljs-comment"># tree</span><br>├── dockerfile<br>│   └── web<br>│       └── nginx<br>│           └── 1.20<br>│               ├── build.sh<br>│               ├── Dockerfile<br>│               ├── index.html<br>│               ├── nginx-1.20.0.tar.gz<br>│               └── nginx.conf<br><br>[root@Rocky8 data]<span class="hljs-comment"># mkdir -p /data/dockerfile/web/nginx/1.20 #创建dockerfile目录</span><br>[root@Rocky8 data]<span class="hljs-comment"># cd /data/dockerfile/web/nginx/1.20</span><br>[root@Rocky8 1.20]<span class="hljs-comment"># wget http://nginx.org/download/nginx-1.20.0.tar.gz #下载二进制包</span><br>[root@Rocky8 1.20]<span class="hljs-comment"># echo &quot;Test Page in app&quot; &gt; index.html #准备index测试文件</span><br>[root@Rocky8 1.20]<span class="hljs-comment"># vim /data/dockerfile/web/nginx/1.16/nginx.conf #找一台主机安装nginx拷贝配置文件并修改以下配置</span><br>worker_processes auto;<br>user nginx;<br>daemon off; <span class="hljs-comment">#增加此行,前台运行nginx</span><br>[root@Rocky8 1.20]<span class="hljs-comment"># vim Dockerfile #编写dockerfile</span><br>[root@Rocky8 1.20]<span class="hljs-comment"># cat Dockerfile #dockerfile文件内容</span><br>FROM rockylinux:8.5 <span class="hljs-comment">#指定rockylinux:8.5为基础镜像</span><br>LABEL maintainer=<span class="hljs-string">&quot;xinqi&quot;</span> <span class="hljs-comment">#备注说明信息</span><br>ENV NGINX_VERSION=1.20.0 <span class="hljs-comment">#设定变量</span><br>ADD nginx-<span class="hljs-variable">$&#123;NGINX_VERSION&#125;</span>.tar.gz /usr/local/src <span class="hljs-comment">#解压二进制包到指定路径</span><br>RUN yum -y install gcc make gcc-c++ libtool pcre pcre-devel zlib zlib-devel openssl openssl-devel &amp;&amp; \ <span class="hljs-comment">#安装编译所需包</span><br>    <span class="hljs-built_in">rm</span> -rf /var/cache/dnf/* &amp;&amp; \ <span class="hljs-comment">#删除安装包缓存释放空间</span><br>    <span class="hljs-built_in">cd</span> /usr/local/src/nginx-<span class="hljs-variable">$&#123;NGINX_VERSION&#125;</span> &amp;&amp; \ <span class="hljs-comment">#进入包路径</span><br>    ./configure --prefix=/apps/nginx \ <span class="hljs-comment">#开始编译安装</span><br>    &amp;&amp; make &amp;&amp; make install \<br>    &amp;&amp; <span class="hljs-built_in">rm</span> -f /usr/local/src/nginx-<span class="hljs-variable">$&#123;NGINX_VERSION&#125;</span>\ \ <br>    &amp;&amp; useradd -r nginx<br>COPY nginx.conf /apps/nginx/conf/ <span class="hljs-comment">#拷贝配置文件到容器配置文件路径</span><br>COPY index.html /apps/nginx/html/ <span class="hljs-comment">#拷贝index文件</span><br>EXPOSE 80 443 <span class="hljs-comment">#暴露80和443端口</span><br>CMD [<span class="hljs-string">&quot;/apps/nginx/sbin/nginx&quot;</span>]<br></code></pre></td></tr></table></figure>
+
+<h5 id="2-2-生成nginx镜像"><a href="#2-2-生成nginx镜像" class="headerlink" title="2.2 生成nginx镜像"></a>2.2 生成nginx镜像</h5><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs sh">[root@Rocky8 1.20]<span class="hljs-comment"># cat build.sh #写一个生成镜像的脚本</span><br><span class="hljs-comment">#!/bin/bash</span><br><span class="hljs-comment">#</span><br>docker build -t nginx-rocky:1.20 .<br><br>[root@Rocky8 1.20]<span class="hljs-comment"># chmod +x build.sh #添加执行权限</span><br>[root@Rocky8 1.20]<span class="hljs-comment"># ls</span><br>build.sh  Dockerfile  index.html  nginx-1.20.0.tar.gz  nginx.conf<br>[root@Rocky8 1.20]<span class="hljs-comment"># ./build.sh #执行</span><br>[+] Building 0.0s (10/10) FINISHED                                                                        docker:default<br> =&gt; [internal] load build definition from Dockerfile                                                                0.0s<br> =&gt; =&gt; transferring dockerfile: 605B                                                                                0.0s<br> =&gt; [internal] load .dockerignore                                                                                   0.0s<br> =&gt; =&gt; transferring context: 2B                                                                                     0.0s<br> =&gt; [internal] load metadata <span class="hljs-keyword">for</span> docker.io/library/rockylinux:8.5                                                   0.0s<br> =&gt; [1/5] FROM docker.io/library/rockylinux:8.5                                                                     0.0s<br> =&gt; [internal] load build context                                                                                   0.0s<br> =&gt; =&gt; transferring context: 101B                                                                                   0.0s<br> =&gt; CACHED [2/5] ADD nginx-1.20.0.tar.gz /usr/local/src                                                             0.0s<br> =&gt; CACHED [3/5] RUN yum -y install gcc make gcc-c++ libtool pcre pcre-devel zlib zlib-devel openssl openssl-devel  0.0s<br> =&gt; CACHED [4/5] COPY nginx.conf /apps/nginx/conf/                                                                  0.0s<br> =&gt; CACHED [5/5] COPY index.html /apps/nginx/html/                                                                  0.0s<br> =&gt; exporting to image                                                                                              0.0s<br> =&gt; =&gt; exporting layers                                                                                             0.0s<br> =&gt; =&gt; writing image sha256:80ce005ca7b754c3be485f79b751231ceba3f4fa09a042fa5a21081906b7ed45                        0.0s<br> =&gt; =&gt; naming to docker.io/library/nginx-rocky3:1.20                                                                0.0s<br>[root@Rocky8 1.20]<span class="hljs-comment"># docker images #查看镜像是否创建</span><br>REPOSITORY     TAG       IMAGE ID       CREATED          SIZE<br>nginx-rocky    1.20      71755adad878   47 minutes ago   528MB<br>rockylinux     8.5       210996f98b85   20 months ago    205MB<br></code></pre></td></tr></table></figure>
+
+<h5 id="2-3-生成容器测试镜像"><a href="#2-3-生成容器测试镜像" class="headerlink" title="2.3 生成容器测试镜像"></a>2.3 生成容器测试镜像</h5><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs sh">[root@Rocky8 1.20]<span class="hljs-comment"># docker run -d -p 80:80 --name nginx nginx-rocky2:1.20 #运行镜像</span><br>3a902a0ec4ae86e4905cd0a7c86e6dee80d6434907cedb91362e97262343e2de<br>[root@Rocky8 1.20]<span class="hljs-comment"># docker ps</span><br>CONTAINER ID   IMAGE               COMMAND                  CREATED          STATUS         PORTS                                        NAMES<br>3a902a0ec4ae   nginx-rocky2:1.20   <span class="hljs-string">&quot;/apps/nginx/sbin/ng…&quot;</span>   10 seconds ago   Up 9 seconds   0.0.0.0:80-&gt;80/tcp, :::80-&gt;80/tcp, 443/tcp   nginx<br>[root@Rocky8 1.20]<span class="hljs-comment"># </span><br>[root@Rocky8 1.20]<span class="hljs-comment"># curl 127.0.0.1 #查看页面</span><br>Test page <span class="hljs-keyword">in</span> app<br></code></pre></td></tr></table></figure>
+
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/09/11/%E6%90%AD%E5%BB%BAHarbor%E4%BB%93%E5%BA%93%E7%94%A8HAProxy%E5%AE%9E%E7%8E%B0%E9%AB%98%E5%8F%AF%E7%94%A8/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">搭建Harbor仓库用HAProxy实现高可用</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/08/29/%E7%AC%AC%E5%8D%81%E4%B8%80%E5%91%A8%E4%BD%9C%E4%B8%9A/">
+                        <span class="hidden-mobile">第十一周作业</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;TOC</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

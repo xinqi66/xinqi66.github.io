@@ -1,0 +1,603 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="前言完全免费的git网站搭建, 参考 https:&#x2F;&#x2F;blog.csdn.net&#x2F;yaorongke&#x2F;article&#x2F;details&#x2F;119089190 实现的目标: 本地写markdown, 推送github即可以看 github.io 域名查看网页。 实现的工具  nodejs           hexo生成网站 codeup.aliyun.com    保存自己的博客代码 github.c">
+<meta property="og:type" content="article">
+<meta property="og:title" content="免费搞网站-gitpages">
+<meta property="og:url" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/index.html">
+<meta property="og:site_name" content="5-12 23:30">
+<meta property="og:description" content="前言完全免费的git网站搭建, 参考 https:&#x2F;&#x2F;blog.csdn.net&#x2F;yaorongke&#x2F;article&#x2F;details&#x2F;119089190 实现的目标: 本地写markdown, 推送github即可以看 github.io 域名查看网页。 实现的工具  nodejs           hexo生成网站 codeup.aliyun.com    保存自己的博客代码 github.c">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512214701-16524035403072.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512214623.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512225649.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512223352.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512224452.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512225143.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512230442.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512231059.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512231120.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512231146.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220513000840.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512231255.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512231628.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512231324.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512232021.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512232122.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512232141.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512232151.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512231737.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/image-20220513092438970.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512233119.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512234116.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512234553.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512235039.png">
+<meta property="og:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512235647.png">
+<meta property="article:published_time" content="2022-05-12T21:42:45.000Z">
+<meta property="article:modified_time" content="2023-09-27T15:00:50.769Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="git">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/2022/05/12/%E5%85%8D%E8%B4%B9%E6%90%9E%E7%BD%91%E7%AB%99-gitpages/20220512214701-16524035403072.png">
+  
+  
+  <title>免费搞网站-gitpages - 5-12 23:30</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4/github-markdown.min.css" />
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hint.css@2/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.css" />
+  
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.8.14","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                Home
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                Archives
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                Categories
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                Tags
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                About
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="免费搞网站-gitpages">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2022-05-12 21:42" pubdate>
+        May 12, 2022 pm
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      8.8k 字
+    </span>
+  
+
+  
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      74 分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">免费搞网站-gitpages</h1>
+            
+            <div class="markdown-body">
+              <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>完全免费的git网站搭建, 参考 <a target="_blank" rel="noopener" href="https://blog.csdn.net/yaorongke/article/details/119089190">https://blog.csdn.net/yaorongke/article/details/119089190</a></p>
+<p>实现的目标: 本地写markdown, 推送github即可以看 github.io 域名查看网页。</p>
+<p>实现的工具</p>
+<ul>
+<li><code>nodejs</code>           hexo生成网站</li>
+<li><code>codeup.aliyun.com</code>    保存自己的博客代码</li>
+<li><code>github.com</code>   静态页面展示 </li>
+<li><code>vscode</code>   开发工具</li>
+</ul>
+<span id="more"></span>
+
+<h1 id="生成静态页面"><a href="#生成静态页面" class="headerlink" title="生成静态页面"></a>生成静态页面</h1><p>参考  <a target="_blank" rel="noopener" href="https://blog.csdn.net/yaorongke/article/details/119089190">https://blog.csdn.net/yaorongke/article/details/119089190</a> 确保访问OK</p>
+<p>slcnx.github.io 仓库名</p>
+<p>准备index.html</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><div class="code-wrapper"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></div></td><td class="code"><pre><code class="hljs xml"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-keyword">html</span>&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;en&quot;</span>&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">&quot;UTF-8&quot;</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">http-equiv</span>=<span class="hljs-string">&quot;X-UA-Compatible&quot;</span> <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;IE=edge&quot;</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;viewport&quot;</span> <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;width=device-width, initial-scale=1.0&quot;</span>&gt;</span><br>  <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>主页<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span><br>  hello world<br><span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="20220512214701-16524035403072.png" srcset="/img/loading.gif" lazyload alt="image-20220512214700115"></p>
+<p><img src="20220512214623.png" srcset="/img/loading.gif" lazyload alt="image-20220512214617755"></p>
+<h1 id="docker推送github"><a href="#docker推送github" class="headerlink" title="docker推送github"></a>docker推送github</h1><p>新建临时目录，vscode打开, 准备以下文件</p>
+<p>id_rsa_2048 <strong>需要linux生成或xshell生成，不可以自己生成</strong></p>
+<p>id_rsa_2048的公钥加入到以上仓库中</p>
+<p><img src="20220512225649.png" srcset="/img/loading.gif" lazyload alt="image-20220512225647448"></p>
+<p>Dockerfile</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs routeros"><span class="hljs-keyword">FROM</span> node:latest<br><br><br>WORKDIR /data/git <br><br><span class="hljs-built_in">ADD</span> id_rsa_2048 /root/.ssh/<br><span class="hljs-built_in">RUN</span>  chmod 600 /root/.ssh/id_rsa_2048 <br><br><span class="hljs-built_in">ADD</span> . ./<br><br><span class="hljs-comment"># 生成网页</span><br><span class="hljs-comment">#RUN npm run build </span><br><br><br><span class="hljs-comment"># 上传到GIT</span><br><br><span class="hljs-built_in">RUN</span> install -dv /data/page/ &amp;&amp; cp -a index.html /data/page/<br><br><br>WORKDIR /data/page/<br>ENV <span class="hljs-attribute">GIT_SSH_COMMAND</span>=<span class="hljs-string">&#x27;ssh -i /root/.ssh/id_rsa_2048  -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no&#x27;</span><br><span class="hljs-built_in">RUN</span> git<span class="hljs-built_in"> config </span>--global init.defaultBranch main &amp;&amp; git<span class="hljs-built_in"> config </span>--global user.email <span class="hljs-string">&#x27;2192383945@qq.com&#x27;</span> &amp;&amp; git<span class="hljs-built_in"> config </span>--global user.name <span class="hljs-string">&#x27;songliangcheng&#x27;</span>  &amp;&amp; \<br>    git<span class="hljs-built_in"> config </span>--global pull.rebase <span class="hljs-literal">true</span> &amp;&amp; \<br>    git init &amp;&amp; \<br>    git remote <span class="hljs-built_in">add</span> origin git@github.com:slcnx/slcnx.github.io.git &amp;&amp; git <span class="hljs-built_in">add</span> -A &amp;&amp; git commit -m init &amp;&amp; git push --force origin main <br></code></pre></td></tr></table></figure>
+
+<p>index.html</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs xml"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-keyword">html</span>&gt;</span><br><span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;en&quot;</span>&gt;</span><br><br><span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">&quot;UTF-8&quot;</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">http-equiv</span>=<span class="hljs-string">&quot;X-UA-Compatible&quot;</span> <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;IE=edge&quot;</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">name</span>=<span class="hljs-string">&quot;viewport&quot;</span> <span class="hljs-attr">content</span>=<span class="hljs-string">&quot;width=device-width, initial-scale=1.0&quot;</span>&gt;</span><br>    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>主页<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span><br><span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span><br><br><span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span><br>    cat<br><span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span><br><br><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">D:\vscode_projects\myblog&gt;docker build -t <span class="hljs-built_in">test</span> .<br></code></pre></td></tr></table></figure>
+
+<p><img src="20220512223352.png" srcset="/img/loading.gif" lazyload alt="image-20220512223351323"></p>
+<h1 id="本地生成hexo仓库"><a href="#本地生成hexo仓库" class="headerlink" title="本地生成hexo仓库"></a>本地生成hexo仓库</h1><h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs bash">npm install hexo-cli -g<br><br><span class="hljs-comment"># 当前目录为项目根</span><br>hexo init test1blog<br><span class="hljs-built_in">cd</span> test1blog<br><br><span class="hljs-comment"># 内容</span><br>$ <span class="hljs-built_in">ls</span><br>_config.landscape.yml  node_modules/  package-lock.json  <span class="hljs-built_in">source</span>/<br>_config.yml            package.json   scaffolds/         themes/<br></code></pre></td></tr></table></figure>
+
+<h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><figure class="highlight axapta"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs axapta">hexo <span class="hljs-keyword">server</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="20220512224452.png" srcset="/img/loading.gif" lazyload alt="image-20220512224451207"></p>
+<h2 id="发布到github"><a href="#发布到github" class="headerlink" title="发布到github"></a>发布到github</h2><p>在以上目录 <code>test1blog</code> 中生成以下文件</p>
+<ol>
+<li><p><code>.dockerignore</code></p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs">node_modules/<br></code></pre></td></tr></table></figure></li>
+<li><p><code>Dockerfile</code></p>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs dockerfile"><span class="hljs-keyword">FROM</span> node:latest<br><br><br><span class="hljs-keyword">WORKDIR</span><span class="language-bash"> /data/git </span><br><br><span class="hljs-keyword">ADD</span><span class="language-bash"> id_rsa_2048 /root/.ssh/</span><br><span class="hljs-keyword">RUN</span><span class="language-bash">  <span class="hljs-built_in">chmod</span> 600 /root/.ssh/id_rsa_2048 </span><br><br><span class="hljs-keyword">ADD</span><span class="language-bash"> . ./</span><br><br><span class="hljs-comment"># 生成网页</span><br><span class="hljs-keyword">RUN</span><span class="language-bash"> npm install &amp;&amp; npm run build </span><br><br><span class="hljs-comment"># 上传到GIT</span><br><span class="hljs-keyword">RUN</span><span class="language-bash"> install -dv /data/page/ &amp;&amp; <span class="hljs-built_in">cp</span> -a public /data/page/</span><br><br><span class="hljs-keyword">ARG</span> GITHUB<br><span class="hljs-keyword">ARG</span> GUSER <br><span class="hljs-keyword">ARG</span> EMAIL <br><span class="hljs-keyword">WORKDIR</span><span class="language-bash"> /data/page/public/</span><br><span class="hljs-keyword">ENV</span> GIT_SSH_COMMAND=<span class="hljs-string">&#x27;ssh -i /root/.ssh/id_rsa_2048  -o IdentitiesOnly=yes -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no&#x27;</span><br><span class="hljs-keyword">RUN</span><span class="language-bash"> git config --global init.defaultBranch main &amp;&amp; git config --global user.email <span class="hljs-variable">$EMAIL</span>  &amp;&amp; git config --global user.name <span class="hljs-variable">$GUSER</span>  &amp;&amp; \</span><br><span class="language-bash">    git config --global pull.rebase <span class="hljs-literal">true</span> &amp;&amp; \</span><br><span class="language-bash">    git init &amp;&amp; \</span><br><span class="language-bash">    git remote add origin <span class="hljs-variable">$GITHUB</span> &amp;&amp; git add -A &amp;&amp; git commit -m init &amp;&amp; git push --force origin main </span><br></code></pre></td></tr></table></figure></li>
+<li><p><code>id_rsa_2048</code> 以上与github互通的密钥</p>
+</li>
+<li><p>发布</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs stylus">docker build <span class="hljs-attr">--build-arg</span> GITHUB=git@github<span class="hljs-selector-class">.com</span>:slcnx/slcnx<span class="hljs-selector-class">.github</span><span class="hljs-selector-class">.io</span><span class="hljs-selector-class">.git</span> <span class="hljs-attr">--build-arg</span> EMAIL=<span class="hljs-string">&#x27;2192383945@qq.com&#x27;</span> <span class="hljs-attr">--build-arg</span> GUSER=<span class="hljs-string">&#x27;songliangcheng&#x27;</span> ./<br></code></pre></td></tr></table></figure></li>
+</ol>
+<p><img src="20220512225143.png" srcset="/img/loading.gif" lazyload alt="image-20220512225141348"></p>
+<h1 id="codeup一键发布"><a href="#codeup一键发布" class="headerlink" title="codeup一键发布"></a>codeup一键发布</h1><h2 id="添加codeup仓库"><a href="#添加codeup仓库" class="headerlink" title="添加codeup仓库"></a>添加codeup仓库</h2><p>将当前仓库加入到自己的codeup中</p>
+<p><img src="20220512230442.png" srcset="/img/loading.gif" lazyload alt="image-20220512230441057"></p>
+<p>复制https地址 <a target="_blank" rel="noopener" href="https://codeup.aliyun.com/5f73e5a3728df4b180fab5ca/myblog-2022-05-12.git">https://codeup.aliyun.com/5f73e5a3728df4b180fab5ca/myblog-2022-05-12.git</a></p>
+<h2 id="初始化代码"><a href="#初始化代码" class="headerlink" title="初始化代码"></a>初始化代码</h2><p>将上面test1blog中，初始化，添加代码</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs bash">git config --global init.defaultBranch main<br>git init<br>git remote add origin https://codeup.aliyun.com/5f73e5a3728df4b180fab5ca/myblog-2022-05-12.git<br></code></pre></td></tr></table></figure>
+
+<p>添加文件 <code>.gitignore</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># Logs</span><br>logs<br>*.<span class="hljs-built_in">log</span><br>npm-debug.log*<br>yarn-debug.log*<br>yarn-error.log*<br>lerna-debug.log*<br>.pnpm-debug.log*<br><br><span class="hljs-comment"># Diagnostic reports (https://nodejs.org/api/report.html)</span><br>report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json<br><br><span class="hljs-comment"># Runtime data</span><br>pids<br>*.pid<br>*.seed<br>*.pid.lock<br><br><span class="hljs-comment"># Directory for instrumented libs generated by jscoverage/JSCover</span><br>lib-cov<br><br><span class="hljs-comment"># Coverage directory used by tools like istanbul</span><br>coverage<br>*.lcov<br><br><span class="hljs-comment"># nyc test coverage</span><br>.nyc_output<br><br><span class="hljs-comment"># Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)</span><br>.grunt<br><br><span class="hljs-comment"># Bower dependency directory (https://bower.io/)</span><br>bower_components<br><br><span class="hljs-comment"># node-waf configuration</span><br>.lock-wscript<br><br><span class="hljs-comment"># Compiled binary addons (https://nodejs.org/api/addons.html)</span><br>build/Release<br><br><span class="hljs-comment"># Dependency directories</span><br>node_modules/<br>jspm_packages/<br><br><span class="hljs-comment"># Snowpack dependency directory (https://snowpack.dev/)</span><br>web_modules/<br><br><span class="hljs-comment"># TypeScript cache</span><br>*.tsbuildinfo<br><br><span class="hljs-comment"># Optional npm cache directory</span><br>.npm<br><br><span class="hljs-comment"># Optional eslint cache</span><br>.eslintcache<br><br><span class="hljs-comment"># Optional stylelint cache</span><br>.stylelintcache<br><br><span class="hljs-comment"># Microbundle cache</span><br>.rpt2_cache/<br>.rts2_cache_cjs/<br>.rts2_cache_es/<br>.rts2_cache_umd/<br><br><span class="hljs-comment"># Optional REPL history</span><br>.node_repl_history<br><br><span class="hljs-comment"># Output of &#x27;npm pack&#x27;</span><br>*.tgz<br><br><span class="hljs-comment"># Yarn Integrity file</span><br>.yarn-integrity<br><br><span class="hljs-comment"># dotenv environment variable files</span><br>.<span class="hljs-built_in">env</span><br>.env.development.local<br>.env.test.local<br>.env.production.local<br>.env.local<br><br><span class="hljs-comment"># parcel-bundler cache (https://parceljs.org/)</span><br>.cache<br>.parcel-cache<br><br><span class="hljs-comment"># Next.js build output</span><br>.next<br>out<br><br><span class="hljs-comment"># Nuxt.js build / generate output</span><br>.nuxt<br>dist<br><br><span class="hljs-comment"># Gatsby files</span><br>.cache/<br><span class="hljs-comment"># Comment in the public line in if your project uses Gatsby and not Next.js</span><br><span class="hljs-comment"># https://nextjs.org/blog/next-9-1#public-directory-support</span><br><span class="hljs-comment"># public</span><br><br><span class="hljs-comment"># vuepress build output</span><br>.vuepress/dist<br><br><span class="hljs-comment"># vuepress v2.x temp and cache directory</span><br>.temp<br>.cache<br><br><span class="hljs-comment"># Docusaurus cache and generated files</span><br>.docusaurus<br><br><span class="hljs-comment"># Serverless directories</span><br>.serverless/<br><br><span class="hljs-comment"># FuseBox cache</span><br>.fusebox/<br><br><span class="hljs-comment"># DynamoDB Local files</span><br>.dynamodb/<br><br><span class="hljs-comment"># TernJS port file</span><br>.tern-port<br><br><span class="hljs-comment"># Stores VSCode versions used for testing VSCode extensions</span><br>.vscode-test<br><br><span class="hljs-comment"># yarn v2</span><br>.yarn/cache<br>.yarn/unplugged<br>.yarn/build-state.yml<br>.yarn/install-state.gz<br>.pnp.*<br><br><br><span class="hljs-comment"># 静态文件</span><br>public <br></code></pre></td></tr></table></figure>
+
+<h2 id="推送aliyun"><a href="#推送aliyun" class="headerlink" title="推送aliyun"></a>推送aliyun</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 状态</span><br>$ git status<br>hint: core.useBuiltinFSMonitor will be deprecated soon; use core.fsmonitor instead<br>hint: Disable this message with <span class="hljs-string">&quot;git config advice.useCoreFSMonitorConfig false&quot;</span><br>On branch main<br><br>No commits yet<br><br>Untracked files:<br>  (use <span class="hljs-string">&quot;git add &lt;file&gt;...&quot;</span> to include <span class="hljs-keyword">in</span> what will be committed)<br>        .dockerignore<br>        .github/<br>        .gitignore<br>        .npmignore<br>        Dockerfile<br>        _config.landscape.yml<br>        _config.yml<br>        db.json<br>        id_rsa_2048<br>        package-lock.json<br>        package.json<br>        scaffolds/<br>        <span class="hljs-built_in">source</span>/<br>        themes/<br>        <br><span class="hljs-comment"># 生成标志</span><br>$ <span class="hljs-built_in">echo</span> <span class="hljs-string">&#x27;1111&#x27;</span> &gt;&gt; <span class="hljs-built_in">source</span>/_posts/hello-world.md<br><br><span class="hljs-comment"># 推送</span><br>git add . <br>git commit -m init<br><br>$ git push origin main<br>Enumerating objects: 122, <span class="hljs-keyword">done</span>.<br>Counting objects: 100% (122/122), <span class="hljs-keyword">done</span>.<br>Delta compression using up to 8 threads<br>Compressing objects: 100% (110/110), <span class="hljs-keyword">done</span>.<br>Writing objects: 100% (122/122), 580.00 KiB | 7.34 MiB/s, <span class="hljs-keyword">done</span>.<br>Total 122 (delta 0), reused 0 (delta 0), pack-reused 0<br>To https://codeup.aliyun.com/5f73e5a3728df4b180fab5ca/myblog-2022-05-12.git<br> * [new branch]      main -&gt; main<br><br></code></pre></td></tr></table></figure>
+
+<h2 id="aliyun验证"><a href="#aliyun验证" class="headerlink" title="aliyun验证"></a>aliyun验证</h2><p><img src="20220512231059.png" srcset="/img/loading.gif" lazyload alt="image-20220512231058218"></p>
+<h2 id="添加流水线"><a href="#添加流水线" class="headerlink" title="添加流水线"></a>添加流水线</h2><p><img src="20220512231120.png" srcset="/img/loading.gif" lazyload alt="image-20220512231118465"></p>
+<p><img src="20220512231146.png" srcset="/img/loading.gif" lazyload alt="image-20220512231145367"></p>
+<p><img src="20220513000840.png" srcset="/img/loading.gif" lazyload alt="image-20220513000838863"></p>
+<p><img src="20220512231255.png" srcset="/img/loading.gif" lazyload alt="image-20220512231253578"></p>
+<p><img src="20220512231628.png" srcset="/img/loading.gif" lazyload alt="image-20220512231626849"></p>
+<p>删除kubernetes发布</p>
+<p>保存并运行</p>
+<p><img src="20220512231324.png" srcset="/img/loading.gif" lazyload alt="image-20220512231322519"></p>
+<h2 id="查看运行日志"><a href="#查看运行日志" class="headerlink" title="查看运行日志"></a>查看运行日志</h2><p><img src="20220512232021.png" srcset="/img/loading.gif" lazyload alt="image-20220512232019242"></p>
+<h2 id="查看github进度"><a href="#查看github进度" class="headerlink" title="查看github进度"></a>查看github进度</h2><p><img src="20220512232122.png" srcset="/img/loading.gif" lazyload alt="image-20220512232121239"></p>
+<h2 id="查看页面"><a href="#查看页面" class="headerlink" title="查看页面"></a>查看页面</h2><p>当进度为</p>
+<p><img src="20220512232141.png" srcset="/img/loading.gif" lazyload alt="image-20220512232140087"></p>
+<p><img src="20220512232151.png" srcset="/img/loading.gif" lazyload alt="image-20220512232150142"></p>
+<h1 id="开发方式"><a href="#开发方式" class="headerlink" title="开发方式"></a>开发方式</h1><h2 id="准备vscode"><a href="#准备vscode" class="headerlink" title="准备vscode"></a>准备vscode</h2><p>在vscode中加载 codeup的仓库</p>
+<p>安装插件 typora  <strong>安装后需要重启vscode</strong></p>
+<p><img src="20220512231737.png" srcset="/img/loading.gif" lazyload alt="image-20220512231735959"></p>
+<h2 id="本地开发"><a href="#本地开发" class="headerlink" title="本地开发"></a>本地开发</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># clone 代码</span><br><br><span class="hljs-comment"># 安装依赖</span><br>npm install<br><br><span class="hljs-comment"># 运行服务</span><br>npx hexo server<br></code></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>npx command</code> 相当于加载了<code>$(npm bin)</code> 目录到环境变量, 后面的命令可以执行</p>
+</blockquote>
+<p>通过本地调试出合理的界面, 推送aliyun, 就可以一键发布</p>
+<h2 id="本地添加文章"><a href="#本地添加文章" class="headerlink" title="本地添加文章"></a>本地添加文章</h2><p>脚本 <code>addarticle.sh</code></p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs awk">echo -ne <span class="hljs-string">&quot;Enter a \033[1;31mtitle\033[0m for your blog: &quot;</span>; read title<br>[ $? -ne <span class="hljs-number">0</span> ] &amp;&amp; echo <span class="hljs-string">&#x27;exit&#x27;</span> &amp;&amp; sleep <span class="hljs-number">3</span> &amp;&amp; <span class="hljs-keyword">exit</span> <span class="hljs-number">1</span><br>[ -z <span class="hljs-string">&quot;$title&quot;</span> ] &amp;&amp; echo title must be exists. &amp;&amp; sleep <span class="hljs-number">3</span> &amp;&amp; <span class="hljs-keyword">exit</span> <span class="hljs-number">1</span><br>npx hexo new <span class="hljs-string">&quot;$title&quot;</span><br><br>start $(readlink -f .)<span class="hljs-regexp">/source/</span>_posts<br></code></pre></td></tr></table></figure>
+
+<p>生成文章, 运行脚本</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-meta">---</span><br><span class="hljs-attr">title:</span> <span class="hljs-string">第1个文章</span><br><span class="hljs-attr">date:</span> <span class="hljs-number">2022-05-12 23:27:58</span><br><span class="hljs-meta">---</span><br></code></pre></td></tr></table></figure>
+
+<h2 id="个性化页面展示"><a href="#个性化页面展示" class="headerlink" title="个性化页面展示"></a>个性化页面展示</h2><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/yaorongke/article/details/119089190">https://blog.csdn.net/yaorongke/article/details/119089190</a></p>
+<ul>
+<li><code>hexo站点配置</code></li>
+<li><code>fluid</code>主题配置</li>
+<li><code>阅读量</code></li>
+<li><code>评论功能</code></li>
+</ul>
+<p>例如修改标题 <code>_config.yml</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">title:</span> <span class="hljs-string">&quot;5-12 23:30&quot;</span><br><span class="hljs-comment"># ...</span><br><br><span class="hljs-attr">post_asset_folder:</span> <span class="hljs-literal">true</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 处理typora相对路径</span><br>npm install hexo-typora-asset --registry https://registry.npmjs.org --save<br></code></pre></td></tr></table></figure>
+
+<p>typora中的配置</p>
+<p><img src="image-20220513092438970.png" srcset="/img/loading.gif" lazyload alt="image-20220513092438970"></p>
+<p>重启 <code>npx hexo server</code></p>
+<p><img src="20220512233119.png" srcset="/img/loading.gif" lazyload alt="image-20220512233117729"></p>
+<h2 id="文章默认页面-可选"><a href="#文章默认页面-可选" class="headerlink" title="文章默认页面(可选)"></a>文章默认页面(可选)</h2><p><a target="_blank" rel="noopener" href="https://hexo.io/docs/writing#Scaffolds">https://hexo.io/docs/writing#Scaffolds</a></p>
+<p>当我们写大量的文章,发现主页不应该显示所有内容,需要readmore, readmore之前有1小段简介</p>
+<p>如下, 上面的nginx文章会<code>显示标题,简介,readmore</code>, 而下面的hello world就显示所有, 这两者区别在于</p>
+<p>后者,默认</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-meta">---</span><br><span class="hljs-attr">title:</span> <span class="hljs-string">第1个文章</span><br><span class="hljs-attr">date:</span> <span class="hljs-number">2022-05-12 23:27:58</span><br><span class="hljs-meta">---</span><br></code></pre></td></tr></table></figure>
+
+<p>前者</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-meta">---</span><br><span class="hljs-attr">title:</span> <span class="hljs-string">第1个文章</span><br><span class="hljs-attr">date:</span> <span class="hljs-number">2022-05-12 23:27:58</span><br><span class="hljs-attr">tags:</span><br><span class="hljs-bullet">-</span> <span class="hljs-string">hello</span><br><span class="hljs-attr">categories:</span><br><span class="hljs-bullet">-</span> <span class="hljs-string">nginx</span><br><span class="hljs-meta">---</span><br><span class="hljs-meta"></span><br><span class="hljs-meta"></span><br><span class="hljs-meta"></span><br><span class="hljs-comment"># 背景</span><br><br><span class="hljs-string">这篇讲解如何编译安装nginx,</span> <span class="hljs-string">优化nginx</span><br><br><span class="hljs-string">&lt;!--more--&gt;</span><br></code></pre></td></tr></table></figure>
+
+<p><img src="20220512234116.png" srcset="/img/loading.gif" lazyload alt="image-20220512234114962"></p>
+<p>要实现每个文章创建均生成nginx这样的模板, 编辑 <code>scaffolds/post.md</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-meta">---</span><br><span class="hljs-attr">title:</span> &#123;&#123; <span class="hljs-string">title</span> &#125;&#125;<br><span class="hljs-attr">date:</span> &#123;&#123; <span class="hljs-string">date</span> &#125;&#125;<br><span class="hljs-attr">tags:</span><br><span class="hljs-bullet">-</span> <br><span class="hljs-attr">categories:</span><br><span class="hljs-bullet">-</span> <br><span class="hljs-meta">---</span><br><span class="hljs-meta"></span><br><span class="hljs-comment"># 背景</span><br><br><span class="hljs-string">&lt;!--more--&gt;</span><br></code></pre></td></tr></table></figure>
+
+<p>现在运行脚本 <code>addarticle.sh</code> 添加<strong>第2个文章</strong></p>
+<p>网页已经达到效果</p>
+<p><img src="20220512234553.png" srcset="/img/loading.gif" lazyload alt="image-20220512234551537"></p>
+<h2 id="准备一个主题-fluid"><a href="#准备一个主题-fluid" class="headerlink" title="准备一个主题 fluid"></a>准备一个主题 fluid</h2><blockquote>
+<p>使用此主题后, 不需要前面的文章默认页面, 每个页面不需要加<code>&lt;!--more--&gt;</code> 主题会自动抽取前多少个字符,作为描述的.</p>
+</blockquote>
+<p>Fluid主题 <a target="_blank" rel="noopener" href="https://blog.csdn.net/yaorongke/article/details/119089190">https://blog.csdn.net/yaorongke/article/details/119089190</a></p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs awk">$ git submodule add https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/fluid-dev/</span>hexo-theme-fluid.git themes/fluid<br></code></pre></td></tr></table></figure>
+
+<p>编辑 <code>_config.yml</code></p>
+<figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs clean"># Extensions<br>## Plugins: https:<span class="hljs-comment">//hexo.io/plugins/</span><br>## Themes: https:<span class="hljs-comment">//hexo.io/themes/</span><br>theme: fluid<br></code></pre></td></tr></table></figure>
+
+<p>重启 <code>npx hexo server</code></p>
+<p><img src="20220512235039.png" srcset="/img/loading.gif" lazyload alt="image-20220512235038001"></p>
+<p>配置主题 <code>fluid</code> 需要准备一个文件 <code>_config.主题名.yml</code></p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs awk">cp themes<span class="hljs-regexp">/fluid/</span>_config.yml _config.fluid.yml<br></code></pre></td></tr></table></figure>
+
+<p>测试配置是否生效,修改 <code>_config.fluid.yml</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-comment"># 首页副标题的独立设置</span><br><span class="hljs-comment"># Independent config of home page subtitle</span><br><span class="hljs-attr">slogan:</span><br>  <span class="hljs-attr">enable:</span> <span class="hljs-literal">true</span><br><br>  <span class="hljs-comment"># 为空则按 hexo config.subtitle 显示</span><br>  <span class="hljs-comment"># If empty, text based on `subtitle` in hexo config</span><br>  <span class="hljs-attr">text:</span> <span class="hljs-string">&quot;Hello 05-12 .... &quot;</span><br></code></pre></td></tr></table></figure>
+
+<p>重启 <code>npx hexo server</code></p>
+<p><img src="20220512235647.png" srcset="/img/loading.gif" lazyload alt="image-20220512235645718"></p>
+<h2 id="发布"><a href="#发布" class="headerlink" title="发布"></a>发布</h2><p>准备脚本 <code>push.sh</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-meta">#!/bin/bash</span><br>git config --<span class="hljs-built_in">local</span> pull.rebase <span class="hljs-literal">true</span><br>git add .<br>git commit -m <span class="hljs-string">&quot;笔记本-`date +%F_%T`&quot;</span><br><br><br>git push origin main<br><br>git pull origin main<br>[ $? -ne 0 ] &amp;&amp; <span class="hljs-built_in">exit</span> -1<br><br>git push origin main<br><br><span class="hljs-comment"># test</span><br>start $(<span class="hljs-built_in">readlink</span> -f .)/source/_posts<br></code></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://slcnx.github.io/">https://slcnx.github.io/</a></p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/git/">git</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/06/26/%E7%AC%AC%E4%B8%80%E5%91%A8%E4%BD%9C%E4%B8%9A/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">第一周作业</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;TOC</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  
+    <script  src="https://cdn.jsdelivr.net/npm/tocbot@4/dist/tocbot.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3/dist/jquery.fancybox.min.js" ></script>
+  
+  
+    <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4/anchor.min.js" ></script>
+  
+  
+    <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2/dist/clipboard.min.js" ></script>
+  
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+        typing(title);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>
